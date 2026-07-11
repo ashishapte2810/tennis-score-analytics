@@ -11,6 +11,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Tennis Score and Analytics</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
   :root {
     --bg: #0f1923;
@@ -95,6 +97,15 @@
   .pts-val { width: 44px; text-align: center; font-size: 26px; font-weight: 900; letter-spacing: -0.04em; color: var(--accent); font-variant-numeric: tabular-nums; }
 
   /* Point buttons */
+  .pt-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); height: 220px; flex-shrink: 0; }
+  .pt-btn { background: var(--bg); border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; gap: 6px; transition: background 0.1s; font-family: inherit; }
+  .pt-btn.p0:active { background: var(--p1-dim); }
+  .pt-btn.p1:active { background: var(--p2-dim); }
+  .pt-btn .btn-name { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; text-align: center; line-height: 1.1; word-break: break-word; }
+  .pt-btn.p0 .btn-name { color: var(--p1); }
+  .pt-btn.p1 .btn-name { color: var(--p2); }
+  .pt-btn .btn-sub { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+
   /* Serve toggle strip */
   .serve-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; background: var(--bg); height: 100px; flex-shrink: 0; padding: 10px 14px; border-top: 1px solid var(--border); }
   .serve-strip-label { display: none; }
@@ -111,15 +122,6 @@
   .serve-tog.tog-df .tog-sub { color: var(--danger); opacity: 0.6; }
   .serve-tog.tog-df:active { background: var(--danger-dim); }
 
-  .pt-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); height: 220px; flex-shrink: 0; }
-  .pt-btn { background: var(--bg); border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; gap: 6px; transition: background 0.1s; font-family: inherit; }
-  .pt-btn.p0:active { background: var(--p1-dim); }
-  .pt-btn.p1:active { background: var(--p2-dim); }
-  .pt-btn .btn-name { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; text-align: center; line-height: 1.1; word-break: break-word; }
-  .pt-btn.p0 .btn-name { color: var(--p1); }
-  .pt-btn.p1 .btn-name { color: var(--p2); }
-  .pt-btn .btn-sub { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
-
   /* Controls */
   .controls { background: var(--surface); padding: 12px 1.25rem; display: flex; gap: 8px; border-top: 1px solid var(--border); }
   .ctrl-btn { flex: 1; background: var(--surface-raised); border: 1px solid var(--border); color: var(--text-secondary); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border-radius: var(--radius-sm); padding: 10px 4px; cursor: pointer; font-family: inherit; }
@@ -129,6 +131,10 @@
   .confirm-bar span { font-size: 13px; font-weight: 600; color: var(--danger); }
   .confirm-bar .cb-btns { display: flex; gap: 8px; }
   .export-bar { background: var(--surface); padding: 10px 1.25rem; display: flex; gap: 8px; border-top: 1px solid var(--border); }
+
+  /* Share badge */
+  .match-code { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); text-align: center; padding: 4px 0; background: var(--bg); display: none; }
+  .match-code span { color: var(--accent); }
 
   /* Log */
   .log-section { background: var(--bg); padding: 1rem 1.5rem; }
@@ -150,6 +156,45 @@
   .end-score { font-size: 20px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; margin-bottom: 2rem; }
   .end-actions { display: flex; gap: 10px; width: 100%; }
   .end-log-section { padding: 1.25rem 1.5rem; }
+
+  /* WATCH — small round screen */
+  @media (max-width: 320px) {
+    #app { max-width: 100%; }
+    #s-setup { padding: 1.25rem 1rem; }
+    .setup-eyebrow { font-size: 8px; }
+    .setup-title { font-size: 20px; margin-bottom: 1rem; }
+    .field-group { margin-bottom: 0.75rem; }
+    .field-group input, .field-group select { font-size: 14px; padding: 8px 10px; }
+    .fields-row { gap: 8px; margin-bottom: 0.75rem; }
+    .btn-primary { padding: 12px; font-size: 13px; }
+    .scoreboard { padding: 0.5rem 0.6rem 0.25rem; }
+    .sb-header { margin-bottom: 0.3rem; }
+    .sb-label { font-size: 7px; letter-spacing: 0.1em; }
+    .sb-status { font-size: 9px; }
+    .ch-lbl { font-size: 7px; }
+    .ch-games, .ch-pts { font-size: 7px; }
+    .games-val { font-size: 16px; width: 24px; }
+    .pts-val { font-size: 18px; width: 36px; }
+    .player-name { font-size: 11px; }
+    .set-pip { font-size: 11px; width: 16px; }
+    .srv-indicator { width: 5px; height: 5px; }
+    .pt-buttons { height: 120px; }
+    .pt-btn .btn-name { font-size: 12px; }
+    .pt-btn .btn-sub { font-size: 7px; }
+    .pt-btn { padding: 0.5rem; gap: 4px; }
+    .serve-strip { height: 60px; padding: 5px 6px; gap: 5px; }
+    .serve-tog .tog-label { font-size: 13px; }
+    .serve-tog .tog-sub { font-size: 6px; letter-spacing: 0.08em; }
+    .serve-tog { border-radius: 10px; gap: 2px; }
+    .controls { padding: 5px 0.6rem; gap: 5px; }
+    .ctrl-btn { font-size: 9px; padding: 5px 2px; }
+    .export-bar { display: none; }
+    .log-section { display: none; }
+    .match-code { display: none; }
+    .saved-flash { padding: 2px 0; font-size: 8px; }
+    .confirm-bar { padding: 6px 0.75rem; }
+    .confirm-bar span { font-size: 11px; }
+  }
 </style>
 </head>
 <body>
@@ -277,8 +322,10 @@
 
     <div class="export-bar">
       <button class="ctrl-btn" onclick="exportCSV()">Export CSV</button>
+      <button class="ctrl-btn" id="btn-share" onclick="shareMatch()" style="display:none;">Share Link</button>
     </div>
 
+    <div class="match-code" id="match-code">Match code: <span id="match-code-val"></span></div>
     <div class="saved-flash" id="saved-flash">Saved</div>
     <div class="log-section">
       <div class="log-section-label">Point Log</div>
@@ -305,6 +352,89 @@
 
 </div>
 <script>
+// Firebase init
+var firebaseConfig = {
+  apiKey: "AIzaSyD-nRfBUHu8prQxVCe1RYpE4niiRSgjD4Q",
+  authDomain: "tennis-score-analytics.firebaseapp.com",
+  projectId: "tennis-score-analytics",
+  storageBucket: "tennis-score-analytics.firebasestorage.app",
+  messagingSenderId: "413242858926",
+  appId: "1:413242858926:web:7596b79938d2711d437c3f"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+
+var DEVICE_ID = Math.random().toString(36).slice(2, 10);
+var MATCH_ID = null;
+var _unsubscribe = null;
+
+function generateMatchId() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var id = '';
+  for (var i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+function setMatchInUrl(id) {
+  var url = new URL(window.location.href);
+  url.searchParams.set('match', id);
+  history.replaceState(null, '', url.toString());
+}
+
+function syncToCloud() {
+  if (!MATCH_ID || !M) return;
+  db.collection('matches').doc(MATCH_ID).set({
+    state: M,
+    updatedBy: DEVICE_ID,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(e) { console.warn('Sync error', e); });
+}
+
+function listenToMatch() {
+  if (_unsubscribe) _unsubscribe();
+  _unsubscribe = db.collection('matches').doc(MATCH_ID).onSnapshot(function(doc) {
+    if (!doc.exists) return;
+    var data = doc.data();
+    if (data.updatedBy === DEVICE_ID) return; // our own write, ignore
+    if (!data.state) return;
+    M = data.state;
+    if (!M.pointLog) M.pointLog = [];
+    HIST = [];
+    document.getElementById('log').innerHTML = '';
+    M.pointLog.forEach(function(e) { appendLogDOM(e.winner, e.winnerIdx || 0, e.ctx, e.score, e.serve); });
+    document.getElementById('btn-undo').disabled = true;
+    if (M.done) {
+      var setWins = [0, 0];
+      M.completedSets.forEach(function(s) { if (s[0] > s[1]) setWins[0]++; else setWins[1]++; });
+      finishMatch(setWins[0] >= M.setsNeeded ? 0 : 1);
+    } else {
+      document.getElementById('nm0').textContent = M.names[0];
+      document.getElementById('nm1').textContent = M.names[1];
+      document.getElementById('blbl0').textContent = M.names[0];
+      document.getElementById('blbl1').textContent = M.names[1];
+      render();
+      flashMsg('Synced •');
+    }
+  }, function(e) { console.warn('Listen error', e); });
+}
+
+function shareMatch() {
+  var url = window.location.href;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() { flashMsg('Link copied!'); });
+  } else {
+    prompt('Share this link:', url);
+  }
+}
+
+function showMatchCode(id) {
+  var el = document.getElementById('match-code');
+  document.getElementById('match-code-val').textContent = id;
+  el.style.display = 'block';
+  document.getElementById('btn-share').style.display = '';
+}
+
+// Core state
 var M = null, HIST = [], PTS = ['0','15','30','40'], SAVE_KEY = 'court_tracker_v2';
 var firstServer = 0;
 
@@ -323,7 +453,10 @@ function updateServeLabels() {
 
 function isDeciding() { return M.completedSets.length === M.totalSets - 1; }
 
-function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ state: M })); } catch(e) {} }
+function save() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ state: M })); } catch(e) {}
+  syncToCloud();
+}
 function loadSaved() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch(e) { return null; } }
 function clearSaved() { try { localStorage.removeItem(SAVE_KEY); } catch(e) {} document.getElementById('resume-card').style.display = 'none'; }
 
@@ -343,6 +476,9 @@ function resumeMatch() {
   HIST = [];
   document.getElementById('log').innerHTML = '';
   M.pointLog.forEach(function(e) { appendLogDOM(e.winner, e.winnerIdx || 0, e.ctx, e.score, e.serve); });
+  // Reconnect to Firestore if URL has match ID
+  var urlId = new URLSearchParams(window.location.search).get('match');
+  if (urlId) { MATCH_ID = urlId; showMatchCode(urlId); listenToMatch(); }
   showMatch();
 }
 
@@ -359,6 +495,11 @@ function startMatch() {
   };
   HIST = []; clearSaved();
   document.getElementById('log').innerHTML = '';
+  MATCH_ID = generateMatchId();
+  setMatchInUrl(MATCH_ID);
+  showMatchCode(MATCH_ID);
+  listenToMatch();
+  save();
   showMatch();
 }
 
@@ -377,9 +518,14 @@ function showMatch() {
 
 function initSetup() {
   M = null; HIST = [];
+  if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
+  MATCH_ID = null;
+  history.replaceState(null, '', window.location.pathname);
   document.getElementById('s-setup').style.display = 'flex';
   document.getElementById('s-match').style.display = 'none';
   document.getElementById('s-end').style.display = 'none';
+  document.getElementById('match-code').style.display = 'none';
+  document.getElementById('btn-share').style.display = 'none';
   checkResume();
 }
 
@@ -434,7 +580,7 @@ function awardPoint(w) {
   var entry = { point: M.pointNum, winner: M.names[w], winnerIdx: w, server: srv, set: M.completedSets.length + 1, ctx: ctx, score: score, mode: M.mode === 'normal' ? 'regular' : M.mode, ts: ts, serve: serveType };
   M.pointLog.push(entry);
   appendLogDOM(entry.winner, entry.winnerIdx, entry.ctx, entry.score, entry.serve);
-  setServeType('1st'); // reset to 1st after every point
+  setServeType('1st');
   save(); flashSaved();
   document.getElementById('btn-undo').disabled = false;
   render();
@@ -478,10 +624,6 @@ function finishMatch(w) {
   document.getElementById('s-end').style.display = 'flex';
   document.getElementById('s-end').style.flexDirection = 'column';
 }
-function flipServe() {
-  if (!M) return; HIST.push(snap()); M.serving = 1 - M.serving;
-  save(); document.getElementById('btn-undo').disabled = false; render();
-}
 function undo() {
   if (!HIST.length) return;
   M = HIST.pop();
@@ -508,9 +650,13 @@ function ptsDisplay(idx) {
   if (pw >= 3 && pl >= 3) { if (pw === pl) return 'D'; return (pw > pl ? idx === 0 : idx === 1) ? 'Ad' : '-'; }
   return PTS[M.pts[idx]] || '0';
 }
-function flashSaved() {
-  var f = document.getElementById('saved-flash'); f.style.display = 'block';
-  clearTimeout(f._t); f._t = setTimeout(function() { f.style.display = 'none'; }, 900);
+function flashSaved() { flashMsg('Saved'); }
+function flashMsg(msg) {
+  var f = document.getElementById('saved-flash');
+  f.textContent = msg;
+  f.style.display = 'block';
+  clearTimeout(f._t);
+  f._t = setTimeout(function() { f.style.display = 'none'; }, 1500);
 }
 function exportCSV() {
   if (!M || !M.pointLog || !M.pointLog.length) { alert('No points recorded yet.'); return; }
@@ -526,10 +672,6 @@ function exportCSV() {
   var slug = function(s) { return s.trim().replace(/[^a-zA-Z0-9]+/g,'_'); };
   var fname = slug(M.names[0]) + '_vs_' + slug(M.names[1]) + '_' + datePart + '_' + timePart + '_' + tzPart + '.csv';
   dl(fname, rows.join('\n'), 'text/csv');
-}
-function exportJSON() {
-  if (!M) return;
-  dl('tennis_match.json', JSON.stringify({ players: M.names, format: 'Best of ' + M.totalSets, decidingSet: M.dec, sets: M.completedSets, pointLog: M.pointLog }, null, 2), 'application/json');
 }
 function dl(name, text, type) {
   var b = new Blob([text], { type: type }), u = URL.createObjectURL(b), a = document.createElement('a');
@@ -558,7 +700,35 @@ function render() {
   }
   document.getElementById('sb-status').textContent = st;
 }
-checkResume();
+
+// On load: check if URL has a match ID to join
+(function() {
+  var urlId = new URLSearchParams(window.location.search).get('match');
+  if (urlId) {
+    MATCH_ID = urlId;
+    db.collection('matches').doc(urlId).get().then(function(doc) {
+      if (doc.exists && doc.data().state) {
+        M = doc.data().state;
+        if (!M.pointLog) M.pointLog = [];
+        HIST = [];
+        document.getElementById('log').innerHTML = '';
+        M.pointLog.forEach(function(e) { appendLogDOM(e.winner, e.winnerIdx || 0, e.ctx, e.score, e.serve); });
+        showMatchCode(urlId);
+        listenToMatch();
+        if (M.done) {
+          var setWins = [0, 0];
+          M.completedSets.forEach(function(s) { if (s[0] > s[1]) setWins[0]++; else setWins[1]++; });
+          finishMatch(setWins[0] >= M.setsNeeded ? 0 : 1);
+        } else {
+          showMatch();
+        }
+      }
+    }).catch(function(e) { console.warn('Load error', e); });
+    return;
+  }
+  checkResume();
+})();
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('./sw.js');
