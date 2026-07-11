@@ -345,11 +345,11 @@
       <button class="ctrl-btn" id="btn-share" onclick="shareMatch()" style="display:none;">Share Link</button>
     </div>
 
-    <div class="match-code" id="match-code">Match code: <span id="match-code-val"></span></div>
     <div class="saved-flash" id="saved-flash">Saved</div>
     <div class="log-section">
       <div class="log-section-label">Point Log</div>
       <div class="log-scroll" id="log"></div>
+      <button onclick="initSetup()" style="width:100%;margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:9px;cursor:pointer;font-family:inherit;">⌂ Home</button>
     </div>
   </div>
 
@@ -577,7 +577,11 @@ function initSetup() {
 
 function askReset() { document.getElementById('confirm-bar').style.display = 'flex'; document.getElementById('btn-reset').style.display = 'none'; }
 function cancelReset() { document.getElementById('confirm-bar').style.display = 'none'; document.getElementById('btn-reset').style.display = ''; }
-function doReset() { cancelReset(); clearSaved(); initSetup(); }
+function doReset() {
+  cancelReset(); clearSaved();
+  if (MATCH_ID) { db.collection('matches').doc(MATCH_ID).delete().catch(function(){}); }
+  initSetup();
+}
 
 function snap() { return JSON.parse(JSON.stringify(M)); }
 
