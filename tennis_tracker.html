@@ -246,6 +246,19 @@
       </div>
     </div>
     <button class="btn-primary" onclick="startMatch()">Start Match</button>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-top:1.25rem;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+      <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);">or join existing</span>
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:1rem;">
+      <input id="inp-join" type="text" placeholder="Match ID (e.g. ABC123)" maxlength="6"
+        style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:16px;font-family:inherit;padding:12px 14px;outline:none;text-transform:uppercase;letter-spacing:0.1em;"
+        oninput="this.value=this.value.toUpperCase()"
+        onkeydown="if(event.key==='Enter')joinMatch()" />
+      <button onclick="joinMatch()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--accent);font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:12px 16px;cursor:pointer;font-family:inherit;white-space:nowrap;">Join</button>
+    </div>
   </div>
 
   <!-- MATCH -->
@@ -254,6 +267,13 @@
       <div class="sb-header">
         <span class="sb-label">Tennis Score and Analytics</span>
         <span class="sb-status" id="sb-status">Set 1</span>
+      </div>
+      <div id="match-id-bar" style="display:none;margin-bottom:0.6rem;">
+        <button onclick="shareMatch()" style="background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 10px;width:100%;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);">Match ID</span>
+          <span id="match-id-display" style="font-size:15px;font-weight:800;letter-spacing:0.18em;color:var(--accent);font-variant-numeric:tabular-nums;"></span>
+          <span style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Tap to copy</span>
+        </button>
       </div>
       <div class="col-headers">
         <span class="ch-spacer"></span>
@@ -428,10 +448,35 @@ function shareMatch() {
 }
 
 function showMatchCode(id) {
+  document.getElementById('match-id-bar').style.display = 'block';
+  document.getElementById('match-id-display').textContent = id;
   var el = document.getElementById('match-code');
-  document.getElementById('match-code-val').textContent = id;
-  el.style.display = 'block';
+  if (el) { document.getElementById('match-code-val').textContent = id; el.style.display = 'block'; }
   document.getElementById('btn-share').style.display = '';
+}
+
+function joinMatch() {
+  var id = document.getElementById('inp-join').value.trim().toUpperCase();
+  if (id.length < 4) { alert('Enter a valid Match ID'); return; }
+  MATCH_ID = id;
+  db.collection('matches').doc(id).get().then(function(doc) {
+    if (!doc.exists || !doc.data().state) { alert('Match not found. Check the ID and try again.'); return; }
+    M = doc.data().state;
+    if (!M.pointLog) M.pointLog = [];
+    HIST = [];
+    document.getElementById('log').innerHTML = '';
+    M.pointLog.forEach(function(e) { appendLogDOM(e.winner, e.winnerIdx || 0, e.ctx, e.score, e.serve); });
+    setMatchInUrl(id);
+    showMatchCode(id);
+    listenToMatch();
+    if (M.done) {
+      var setWins = [0, 0];
+      M.completedSets.forEach(function(s) { if (s[0] > s[1]) setWins[0]++; else setWins[1]++; });
+      finishMatch(setWins[0] >= M.setsNeeded ? 0 : 1);
+    } else {
+      showMatch();
+    }
+  }).catch(function(e) { alert('Error loading match. Try again.'); });
 }
 
 // Core state
@@ -524,8 +569,9 @@ function initSetup() {
   document.getElementById('s-setup').style.display = 'flex';
   document.getElementById('s-match').style.display = 'none';
   document.getElementById('s-end').style.display = 'none';
-  document.getElementById('match-code').style.display = 'none';
+  document.getElementById('match-id-bar').style.display = 'none';
   document.getElementById('btn-share').style.display = 'none';
+  document.getElementById('inp-join').value = '';
   checkResume();
 }
 
