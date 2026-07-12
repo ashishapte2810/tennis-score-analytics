@@ -86,7 +86,8 @@ html, body {
 .score-card:active { transform: scale(0.96); opacity: 0.85; }
 .score-card-p1 { background: var(--you-dim); border: 1.5px solid var(--you-border); }
 .score-card-p2 { background: rgba(255,255,255,0.02); border: 1.5px solid rgba(255,255,255,0.08); }
-.sc-serving { position: absolute; top: 8px; right: 10px; width: 16px; height: 16px; }
+.sc-serving { width: 13px; height: 13px; flex-shrink: 0; }
+.sc-name-row { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; }
 .sc-name { font-size: 11px; font-weight: 700; color: var(--sub); letter-spacing: 0.04em; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-pts { font-size: 72px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
 .sc-pts-p1 { color: var(--text); }
@@ -425,14 +426,18 @@ html, body {
     </div>
     <div class="score-area">
       <div class="score-card score-card-p1" onclick="awardPoint(0)" id="card-p1">
-        <svg class="sc-serving" id="dot0" style="display:none;" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8.5" fill="#c8e63a" stroke="#a8c420" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/></svg>
-        <div class="sc-name" id="sc-name0">Player 1</div>
+        <div class="sc-name-row">
+          <svg class="sc-serving" id="dot0" style="display:none;" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8.5" fill="#c8e63a" stroke="#a8c420" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/></svg>
+          <div class="sc-name" id="sc-name0">Player 1</div>
+        </div>
         <div class="sc-pts sc-pts-p1" id="sc-pts0">0</div>
         <div class="sc-games" id="sc-games0">0 games</div>
       </div>
       <div class="score-card score-card-p2" onclick="awardPoint(1)" id="card-p2">
-        <svg class="sc-serving" id="dot1" style="display:none;" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8.5" fill="#c8e63a" stroke="#a8c420" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/></svg>
-        <div class="sc-name" id="sc-name1">Player 2</div>
+        <div class="sc-name-row">
+          <svg class="sc-serving" id="dot1" style="display:none;" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8.5" fill="#c8e63a" stroke="#a8c420" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/></svg>
+          <div class="sc-name" id="sc-name1">Player 2</div>
+        </div>
         <div class="sc-pts sc-pts-p2" id="sc-pts1">0</div>
         <div class="sc-games" id="sc-games1">0 games</div>
       </div>
@@ -1209,9 +1214,12 @@ function render() {
   // Games
   document.getElementById('sc-games0').textContent = M.games[0]+' game'+(M.games[0]!==1?'s':'');
   document.getElementById('sc-games1').textContent = M.games[1]+' game'+(M.games[1]!==1?'s':'');
-  // Serving dots
-  document.getElementById('dot0').style.display = M.serving===0 ? 'block' : 'none';
-  document.getElementById('dot1').style.display = M.serving===1 ? 'block' : 'none';
+  // Serving balls
+  var BALL_ACTIVE='<circle cx="9" cy="9" r="8.5" fill="#c8e63a" stroke="#a8c420" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/>';
+  var BALL_GRAY='<circle cx="9" cy="9" r="8.5" fill="#1e2126" stroke="#2d3139" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="#3d4450" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="#3d4450" stroke-width="1.2" fill="none" stroke-linecap="round"/>';
+  var d0=document.getElementById('dot0'), d1=document.getElementById('dot1');
+  d0.style.display='inline'; d0.innerHTML=M.serving===0?BALL_ACTIVE:BALL_GRAY;
+  d1.style.display='inline'; d1.innerHTML=M.serving===1?BALL_ACTIVE:BALL_GRAY;
   // Context label
   var st='';
   if (M.mode==='tiebreak') st='Set '+(M.completedSets.length+1)+' Tiebreak';
