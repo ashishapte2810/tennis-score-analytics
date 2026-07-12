@@ -415,14 +415,26 @@ html, body {
 
   <!-- SCORE TAB -->
   <div class="tab-panel active" id="tab-score">
-    <!-- Read-only ended banner -->
-    <div id="ended-banner" style="display:none;margin:12px 16px 0;background:var(--s2);border:1px solid var(--border-strong);border-radius:14px;padding:14px 16px;display:none;align-items:center;justify-content:space-between;gap:12px;">
-      <div>
-        <div style="font-size:9px;font-weight:700;letter-spacing:0.12em;color:var(--muted);margin-bottom:3px;">MATCH ENDED</div>
-        <div style="font-size:14px;font-weight:700;color:var(--text);" id="ended-winner-label"></div>
-        <div style="font-size:11px;color:var(--sub);" id="ended-score-label"></div>
+    <!-- Read-only export panel (shown instead of scoring UI for completed matches) -->
+    <div id="ended-banner" style="display:none;flex-direction:column;gap:12px;padding:20px 16px;">
+      <div style="background:var(--s2);border:1px solid var(--border-strong);border-radius:14px;padding:16px 18px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.12em;color:var(--muted);margin-bottom:4px;">MATCH ENDED</div>
+        <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:2px;" id="ended-winner-label"></div>
+        <div style="font-size:13px;color:var(--sub);" id="ended-score-label"></div>
       </div>
-      <button onclick="initSetup()" style="background:var(--s4);border:1px solid var(--border-strong);border-radius:10px;color:var(--text);font-size:12px;font-weight:700;padding:10px 14px;cursor:pointer;font-family:inherit;white-space:nowrap;">New Match</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button onclick="generateReport()" style="background:var(--s2);border:1px solid var(--border-strong);border-radius:14px;padding:20px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font-family:inherit;">
+          <span style="font-size:28px;line-height:1;">📄</span>
+          <span style="font-size:13px;font-weight:700;color:var(--text);">PDF Report</span>
+          <span style="font-size:11px;color:var(--muted);">Full match summary</span>
+        </button>
+        <button onclick="exportCSV()" style="background:var(--s2);border:1px solid var(--border-strong);border-radius:14px;padding:20px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font-family:inherit;">
+          <span style="font-size:28px;line-height:1;">📊</span>
+          <span style="font-size:13px;font-weight:700;color:var(--text);">Export CSV</span>
+          <span style="font-size:11px;color:var(--muted);">Point-by-point data</span>
+        </button>
+      </div>
+      <button onclick="initSetup()" style="background:var(--s3);border:1px solid var(--border);border-radius:12px;color:var(--sub);font-size:13px;font-weight:700;padding:14px;cursor:pointer;font-family:inherit;width:100%;">← Back to Home</button>
     </div>
     <div class="score-area">
       <div class="score-card score-card-p1" onclick="awardPoint(0)" id="card-p1">
@@ -687,9 +699,10 @@ function showMatch() {
   // Read-only mode: disable scoring UI
   var ro = _readOnly;
   document.getElementById('ended-banner').style.display = ro ? 'flex' : 'none';
-  document.querySelectorAll('.score-card').forEach(function(c) { c.style.pointerEvents = ro ? 'none' : ''; c.style.cursor = ro ? 'default' : ''; });
+  document.querySelector('.score-area').style.display = ro ? 'none' : '';
+  document.getElementById('sets-table').style.display = ro ? 'none' : '';
   document.getElementById('serve-seg-wrap').style.display = ro ? 'none' : '';
-  document.getElementById('stats-preview').style.display = ro ? 'none' : 'none'; // re-shown by render()
+  document.getElementById('stats-preview').style.display = 'none';
   document.querySelector('.action-cards').style.display = ro ? 'none' : '';
   document.getElementById('home-btn').style.display = 'inline-block';
   // Live chip vs ended
