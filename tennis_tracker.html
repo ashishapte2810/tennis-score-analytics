@@ -396,11 +396,14 @@ html, body {
 <!-- ── MATCH ── -->
 <div id="s-match">
   <div class="top-bar">
-    <div class="match-chip" id="match-chip" onclick="shareMatch()" style="display:none;">
-      <div class="live-dot"></div>
-      <span id="match-id-display"></span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button id="home-btn" onclick="askGoHome()" style="background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:4px 6px 4px 0;display:none;">⌂</button>
+      <div class="match-chip" id="match-chip" onclick="shareMatch()" style="display:none;">
+        <div class="live-dot"></div>
+        <span id="match-id-display"></span>
+      </div>
+      <div class="match-chip" id="match-chip-placeholder"><div class="live-dot"></div>LIVE</div>
     </div>
-    <div class="match-chip" id="match-chip-placeholder"><div class="live-dot"></div>LIVE</div>
     <span class="ctx-label" id="ctx-label">Set 1</span>
   </div>
   <div class="tabs">
@@ -685,6 +688,7 @@ function showMatch() {
   document.getElementById('serve-seg-wrap').style.display = ro ? 'none' : '';
   document.getElementById('stats-preview').style.display = ro ? 'none' : 'none'; // re-shown by render()
   document.querySelector('.action-cards').style.display = ro ? 'none' : '';
+  document.getElementById('home-btn').style.display = 'inline-block';
   // Live chip vs ended
   var chip = document.getElementById('match-chip');
   var dot = chip ? chip.querySelector('.live-dot') : null;
@@ -791,6 +795,15 @@ function switchTab(name) {
 
 // ── Confirm overlay ──
 var _confirmAction = null;
+function askGoHome() {
+  if (_readOnly) { initSetup(); return; }
+  _confirmAction = function() { initSetup(); };
+  document.getElementById('confirm-title').textContent = 'Go to home?';
+  document.getElementById('confirm-sub').textContent = 'Your match is saved and can be resumed from the home screen.';
+  document.getElementById('confirm-action-btn').textContent = 'Go Home';
+  document.getElementById('confirm-action-btn').onclick = function() { hideConfirm(); if(_confirmAction)_confirmAction(); };
+  document.getElementById('confirm-overlay').classList.add('show');
+}
 function askEndMatch() {
   _confirmAction = function() { forceEndMatch(); };
   document.getElementById('confirm-title').textContent = 'End match?';
