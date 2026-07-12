@@ -943,7 +943,8 @@ function renderLog() {
     // Approximate: reconstruct from log entries - look at ctx score string
     gameNums.forEach(function(gNum, gi) {
       var entries = setGames[gNum];
-      var isLiveGame = isCurrentSet && gi===0; // most recent game in current set
+      var currentGameNum = M.games[0] + M.games[1] + 1;
+      var isLiveGame = isCurrentSet && gNum === currentGameNum && M.pts[0] + M.pts[1] > 0;
       var lastEntry = entries[entries.length-1];
       // Parse games score from last entry score field: format "S1 G3 · 40-15 | G:3-2"
       // score field: "Sets... | 40-15 | G:3-2" — let's parse G:x-y
