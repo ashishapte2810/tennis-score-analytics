@@ -1538,7 +1538,12 @@ window.addEventListener('load', function() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js');
+    navigator.serviceWorker.register('./sw.js?v=7').then(function(reg) {
+      // Auto-reload when a new SW takes over so fresh HTML is served immediately
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        window.location.reload();
+      });
+    });
   });
 }
 </script>
