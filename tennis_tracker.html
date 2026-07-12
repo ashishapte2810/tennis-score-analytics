@@ -7,372 +7,458 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Tennis Score">
-<meta name="theme-color" content="#0f1923">
+<meta name="theme-color" content="#080a0d">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Tennis Score and Analytics</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
-  :root {
-    --bg: #0f1923;
-    --surface: #1a2d3d;
-    --surface-raised: #223347;
-    --border: rgba(200,228,32,0.15);
-    --border-strong: rgba(200,228,32,0.3);
-    --accent: #c8e420;
-    --accent-dim: rgba(200,228,32,0.12);
-    --p1: #c8e420;
-    --p1-dim: rgba(200,228,32,0.15);
-    --p2: #38d9f5;
-    --p2-dim: rgba(56,217,245,0.15);
-    --text: #e8edf2;
-    --text-secondary: #7a90a8;
-    --text-muted: #4a6078;
-    --danger: #e84040;
-    --danger-dim: rgba(232,64,64,0.12);
-    --success: #2dce6e;
-    --radius: 14px;
-    --radius-sm: 8px;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    background: var(--bg); color: var(--text);
-    font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
-    min-height: 100dvh; height: 100%;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation; overscroll-behavior: none;
-  }
-  #app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #080a0d; --s2: #161b22; --s3: #1e252f; --s4: #252d38;
+  --you: #3dd68c; --you-dim: rgba(61,214,140,0.1); --you-border: rgba(61,214,140,0.3);
+  --opp: #f97316; --opp-dim: rgba(249,115,22,0.08); --opp-border: rgba(249,115,22,0.25);
+  --text: #ffffff; --sub: #8b9ab0; --muted: #4a5568; --border: rgba(255,255,255,0.07);
+  --border-strong: rgba(255,255,255,0.12);
+  --danger: #ef4444; --danger-dim: rgba(239,68,68,0.1); --danger-border: rgba(239,68,68,0.3);
+  --accent: #3dd68c; --radius: 14px; --radius-sm: 8px;
+}
+html, body {
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  min-height: 100dvh; height: 100%;
+  touch-action: manipulation; overscroll-behavior: none;
+}
+#app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
 
-  /* SETUP */
-  #s-setup { flex: 1; display: flex; flex-direction: column; padding: 2rem 1.5rem; }
-  .setup-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
-  .setup-title { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); margin-bottom: 2rem; line-height: 1.1; }
-  .resume-card { background: var(--accent-dim); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: none; }
-  .resume-card .rc-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
-  .resume-card .rc-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
-  .resume-card .rc-detail { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
-  .resume-card .rc-btns { display: flex; gap: 8px; }
-  .field-group { margin-bottom: 1.25rem; }
-  .field-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; }
-  .field-group input, .field-group select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 16px; font-family: inherit; padding: 12px 14px; outline: none; transition: border-color 0.15s; -webkit-appearance: none; appearance: none; }
-  .field-group input:focus, .field-group select:focus { border-color: var(--accent); }
-  .fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.25rem; }
-  .btn-primary { width: 100%; padding: 16px; background: var(--accent); color: #0f1923; font-size: 15px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; border: none; border-radius: var(--radius); cursor: pointer; margin-top: auto; font-family: inherit; }
-  .btn-primary:active { opacity: 0.8; }
-  .serve-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .serve-opt { background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); font-size: 14px; font-weight: 600; border-radius: var(--radius-sm); padding: 11px 8px; cursor: pointer; font-family: inherit; transition: border-color 0.15s, color 0.15s; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .serve-opt.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-  .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 600; border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; font-family: inherit; }
-  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); font-size: 13px; font-weight: 600; border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; font-family: inherit; }
+/* ── SETUP ── */
+#s-setup { flex: 1; display: flex; flex-direction: column; padding: 2rem 1.5rem; }
+.setup-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--you); margin-bottom: 0.5rem; }
+.setup-title { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); margin-bottom: 2rem; line-height: 1.1; }
+.resume-card { background: var(--you-dim); border: 1px solid var(--you-border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: none; }
+.resume-card .rc-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--you); margin-bottom: 4px; }
+.resume-card .rc-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.resume-card .rc-detail { font-size: 12px; color: var(--sub); margin-bottom: 12px; }
+.resume-card .rc-btns { display: flex; gap: 8px; }
+.field-group { margin-bottom: 1.25rem; }
+.field-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sub); margin-bottom: 6px; }
+.field-group input, .field-group select {
+  width: 100%; background: var(--s2); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); color: var(--text); font-size: 16px; font-family: inherit;
+  padding: 12px 14px; outline: none; transition: border-color 0.15s; -webkit-appearance: none;
+}
+.field-group input:focus, .field-group select:focus { border-color: var(--you); }
+.fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.25rem; }
+.btn-primary { width: 100%; padding: 16px; background: var(--you); color: #080a0d; font-size: 15px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; border: none; border-radius: var(--radius); cursor: pointer; margin-top: auto; font-family: inherit; }
+.btn-primary:active { opacity: 0.8; }
+.serve-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.serve-opt { background: var(--s2); border: 1px solid var(--border-strong); color: var(--sub); font-size: 14px; font-weight: 600; border-radius: var(--radius-sm); padding: 11px 8px; cursor: pointer; font-family: inherit; transition: border-color 0.15s, color 0.15s; text-align: center; }
+.serve-opt.active { border-color: var(--you); color: var(--you); background: var(--you-dim); }
+.btn-secondary { background: var(--s2); border: 1px solid var(--border-strong); color: var(--text); font-size: 13px; font-weight: 600; border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; font-family: inherit; }
+.btn-ghost { background: transparent; border: 1px solid var(--border-strong); color: var(--sub); font-size: 13px; font-weight: 600; border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; font-family: inherit; }
+.join-input { flex: 1; background: var(--s2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--text); font-size: 16px; font-family: inherit; padding: 12px 14px; outline: none; text-transform: uppercase; letter-spacing: 0.1em; }
+.join-input:focus { border-color: var(--you); }
 
-  /* MATCH */
-  #s-match { flex: 1; display: none; flex-direction: column; }
-  .saved-flash { text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--success); padding: 5px 0; background: var(--surface); display: none; }
+/* ── MATCH SCREEN ── */
+#s-match { flex: 1; display: none; flex-direction: column; overflow: hidden; }
 
-  .scoreboard { background: var(--surface); padding: 1.25rem 1.5rem 1rem; }
-  .sb-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-  .sb-label { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
-  .sb-status { font-size: 11px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.04em; }
-  .col-headers { display: flex; align-items: center; gap: 10px; padding: 0 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
-  .ch-spacer { width: 6px; flex-shrink: 0; }
-  .ch-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); width: 20px; text-align: center; }
-  .ch-games { width: 32px; text-align: center; font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
-  .ch-pts { width: 44px; text-align: center; font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
-  .player-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
-  .player-row:last-of-type { border-bottom: none; }
-  .srv-indicator { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; transition: background 0.2s; }
-  .srv-indicator.on { background: var(--accent); }
-  .srv-indicator.off { background: transparent; }
-  .player-name { flex: 1; font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; letter-spacing: -0.01em; }
-  .player-name.p0 { color: var(--p1); }
-  .player-name.p1 { color: var(--p2); }
-  .pts-val.p0 { color: var(--p1); }
-  .pts-val.p1 { color: var(--p2); }
-  .set-scores { display: flex; gap: 4px; margin-right: 4px; }
-  .set-pip { width: 20px; text-align: center; font-size: 13px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-  .set-pip.dim { color: var(--text-muted); }
-  .games-val { width: 32px; text-align: center; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); font-variant-numeric: tabular-nums; }
-  .pts-val { width: 44px; text-align: center; font-size: 26px; font-weight: 900; letter-spacing: -0.04em; color: var(--accent); font-variant-numeric: tabular-nums; }
+/* Top bar */
+.top-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 0; flex-shrink: 0; }
+.match-chip { background: var(--s2); border: 1px solid var(--border-strong); border-radius: 20px; padding: 4px 10px; font-size: 10px; color: var(--sub); font-weight: 600; letter-spacing: 0.06em; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.match-chip:active { opacity: 0.7; }
+.live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--you); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+.ctx-label { font-size: 11px; color: var(--muted); font-weight: 500; }
 
-  /* Point buttons */
-  .pt-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); height: 220px; flex-shrink: 0; }
-  .pt-btn { background: var(--bg); border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; gap: 6px; transition: background 0.1s; font-family: inherit; }
-  .pt-btn.p0:active { background: var(--p1-dim); }
-  .pt-btn.p1:active { background: var(--p2-dim); }
-  .pt-btn .btn-name { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; text-align: center; line-height: 1.1; word-break: break-word; }
-  .pt-btn.p0 .btn-name { color: var(--p1); }
-  .pt-btn.p1 .btn-name { color: var(--p2); }
-  .pt-btn .btn-sub { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+/* Tabs */
+.tabs { display: flex; margin: 12px 16px 0; background: var(--s2); border-radius: 10px; padding: 3px; gap: 2px; flex-shrink: 0; }
+.tab { flex: 1; text-align: center; padding: 8px 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.07em; border-radius: 8px; color: var(--muted); cursor: pointer; user-select: none; transition: color 0.15s; }
+.tab.active { background: var(--s4); color: var(--text); }
 
-  /* Serve toggle strip */
-  .serve-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; background: var(--bg); height: 100px; flex-shrink: 0; padding: 10px 14px; border-top: 1px solid var(--border); }
-  .serve-strip-label { display: none; }
-  .serve-tog { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-family: inherit; transition: background 0.1s, border-color 0.1s; }
-  .serve-tog .tog-label { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-muted); transition: color 0.1s; }
-  .serve-tog .tog-sub { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); transition: color 0.1s; }
-  .serve-tog.tog-1st.active { background: rgba(99,179,237,0.12); }
-  .serve-tog.tog-1st.active .tog-label { color: #63b3ed; }
-  .serve-tog.tog-1st.active .tog-sub { color: #63b3ed; }
-  .serve-tog.tog-2nd.active { background: rgba(251,146,60,0.12); }
-  .serve-tog.tog-2nd.active .tog-label { color: #fb923c; }
-  .serve-tog.tog-2nd.active .tog-sub { color: #fb923c; }
-  .serve-tog.tog-df .tog-label { color: var(--danger); opacity: 0.6; }
-  .serve-tog.tog-df .tog-sub { color: var(--danger); opacity: 0.6; }
-  .serve-tog.tog-df:active { background: var(--danger-dim); }
+/* Tab panels */
+.tab-panel { display: none; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.tab-panel.active { display: block; }
 
-  /* Controls */
-  .controls { background: var(--surface); padding: 12px 1.25rem; display: flex; gap: 8px; border-top: 1px solid var(--border); }
-  .ctrl-btn { flex: 1; background: var(--surface-raised); border: 1px solid var(--border); color: var(--text-secondary); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border-radius: var(--radius-sm); padding: 10px 4px; cursor: pointer; font-family: inherit; }
-  .ctrl-btn:active { border-color: var(--accent); color: var(--text); }
-  .ctrl-btn:disabled { opacity: 0.35; pointer-events: none; }
-  .confirm-bar { background: var(--danger-dim); border-top: 1px solid var(--danger); padding: 10px 1.25rem; display: none; align-items: center; justify-content: space-between; gap: 10px; }
-  .confirm-bar span { font-size: 13px; font-weight: 600; color: var(--danger); }
-  .confirm-bar .cb-btns { display: flex; gap: 8px; }
-  .export-bar { background: var(--surface); padding: 10px 1.25rem; display: flex; gap: 8px; border-top: 1px solid var(--border); }
+/* ── SCORE TAB ── */
+.score-area { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 16px 0; }
+.score-card { border-radius: 16px; padding: 18px 12px 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; user-select: none; transition: transform 0.08s, opacity 0.08s; position: relative; }
+.score-card:active { transform: scale(0.96); opacity: 0.85; }
+.score-card-p1 { background: var(--you-dim); border: 1.5px solid var(--you-border); }
+.score-card-p2 { background: rgba(255,255,255,0.02); border: 1.5px solid rgba(255,255,255,0.08); }
+.sc-serving { position: absolute; top: 10px; right: 10px; width: 6px; height: 6px; border-radius: 50%; background: var(--you); }
+.sc-name { font-size: 11px; font-weight: 700; color: var(--sub); letter-spacing: 0.04em; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-pts { font-size: 72px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
+.sc-pts-p1 { color: var(--text); }
+.sc-pts-p2 { color: var(--muted); }
+.sc-games { font-size: 12px; font-weight: 600; color: var(--sub); }
 
-  /* Share badge */
-  .match-code { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); text-align: center; padding: 4px 0; background: var(--bg); display: none; }
-  .match-code span { color: var(--accent); }
+/* Sets table */
+.sets-table { margin: 12px 16px 0; background: var(--s2); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+.sets-head { display: grid; align-items: center; border-bottom: 1px solid var(--border); padding: 6px 12px; }
+.sets-row { display: grid; align-items: center; padding: 9px 12px; }
+.sets-row + .sets-row { border-top: 1px solid var(--border); }
+.sr-name { font-size: 12px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sr-name-p1 { color: var(--you); }
+.sr-name-p2 { color: var(--opp); }
+.sr-cell { font-size: 13px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; color: var(--text); }
+.sr-cell.dim { color: var(--muted); }
+.sr-cell.hd { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.sr-cell.live { color: var(--you); }
+.sr-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--you); }
+.sr-nodot { width: 6px; height: 6px; }
 
-  /* Log */
-  .log-section { background: var(--bg); padding: 1rem 1.5rem; }
-  .log-section-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
-  .log-scroll { max-height: 130px; overflow-y: auto; }
-  .log-entry { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); gap: 8px; }
-  .log-entry:last-child { border-bottom: none; }
-  .log-winner { font-size: 12px; font-weight: 700; }
-  .log-winner.p0 { color: var(--p1); }
-  .log-winner.p1 { color: var(--p2); }
-  .log-ctx { font-size: 11px; color: var(--text-muted); text-align: right; line-height: 1.3; }
-  .log-tags { font-size: 10px; color: var(--accent); opacity: 0.75; }
+/* WHOOP segmented serve selector */
+.serve-seg-wrap { padding: 12px 16px 0; }
+.serve-seg { background: var(--s2); border-radius: 12px; padding: 4px; position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; }
+.serve-bg { position: absolute; top: 4px; height: calc(100% - 8px); width: calc(33.33% - 2.67px); border-radius: 9px; background: var(--s4); transition: left 0.2s cubic-bezier(0.4,0,0.2,1); pointer-events: none; }
+.serve-btn { position: relative; z-index: 1; padding: 10px 4px; text-align: center; cursor: pointer; border-radius: 9px; user-select: none; }
+.serve-btn-label { font-size: 11px; font-weight: 700; color: var(--muted); transition: color 0.15s; }
+.serve-btn.active .serve-btn-label { color: var(--text); }
 
-  /* END */
-  #s-end { flex: 1; display: none; flex-direction: column; }
-  .end-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 2rem; text-align: center; background: var(--surface); }
-  .end-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; }
-  .end-winner { font-size: 36px; font-weight: 900; letter-spacing: -0.04em; color: var(--text); line-height: 1; margin-bottom: 8px; }
-  .end-score { font-size: 20px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; margin-bottom: 2rem; }
-  .end-actions { display: flex; gap: 10px; width: 100%; }
-  .end-log-section { padding: 1.25rem 1.5rem; }
+/* Stats preview bars */
+.stats-preview { margin: 12px 16px 0; display: flex; flex-direction: column; gap: 8px; }
+.sp-row { display: flex; align-items: center; gap: 8px; }
+.sp-val { font-size: 12px; font-weight: 700; min-width: 32px; font-variant-numeric: tabular-nums; }
+.sp-val-p1 { color: var(--you); text-align: left; }
+.sp-val-p2 { color: var(--opp); text-align: right; }
+.sp-bar-wrap { flex: 1; height: 4px; background: var(--s3); border-radius: 2px; position: relative; overflow: hidden; }
+.sp-fill-p1 { position: absolute; top: 0; left: 0; height: 4px; border-radius: 2px; background: var(--you); }
+.sp-fill-p2 { position: absolute; top: 0; right: 0; height: 4px; border-radius: 2px; background: var(--opp); }
+.sp-label { font-size: 9px; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; min-width: 60px; text-align: center; }
 
-  /* WATCH — small round screen */
-  @media (max-width: 320px) {
-    #app { max-width: 100%; }
-    #s-setup { padding: 1.25rem 1rem; }
-    .setup-eyebrow { font-size: 8px; }
-    .setup-title { font-size: 20px; margin-bottom: 1rem; }
-    .field-group { margin-bottom: 0.75rem; }
-    .field-group input, .field-group select { font-size: 14px; padding: 8px 10px; }
-    .fields-row { gap: 8px; margin-bottom: 0.75rem; }
-    .btn-primary { padding: 12px; font-size: 13px; }
-    .scoreboard { padding: 0.5rem 0.6rem 0.25rem; }
-    .sb-header { margin-bottom: 0.3rem; }
-    .sb-label { font-size: 7px; letter-spacing: 0.1em; }
-    .sb-status { font-size: 9px; }
-    .ch-lbl { font-size: 7px; }
-    .ch-games, .ch-pts { font-size: 7px; }
-    .games-val { font-size: 16px; width: 24px; }
-    .pts-val { font-size: 18px; width: 36px; }
-    .player-name { font-size: 11px; }
-    .set-pip { font-size: 11px; width: 16px; }
-    .srv-indicator { width: 5px; height: 5px; }
-    .pt-buttons { height: 120px; }
-    .pt-btn .btn-name { font-size: 12px; }
-    .pt-btn .btn-sub { font-size: 7px; }
-    .pt-btn { padding: 0.5rem; gap: 4px; }
-    .serve-strip { height: 60px; padding: 5px 6px; gap: 5px; }
-    .serve-tog .tog-label { font-size: 13px; }
-    .serve-tog .tog-sub { font-size: 6px; letter-spacing: 0.08em; }
-    .serve-tog { border-radius: 10px; gap: 2px; }
-    .controls { padding: 5px 0.6rem; gap: 5px; }
-    .ctrl-btn { font-size: 9px; padding: 5px 2px; }
-    .export-bar { display: none; }
-    .log-section { display: none; }
-    .match-code { display: none; }
-    .saved-flash { padding: 2px 0; font-size: 8px; }
-    .confirm-bar { padding: 6px 0.75rem; }
-    .confirm-bar span { font-size: 11px; }
-  }
+/* WHOOP action cards */
+.action-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 16px 20px; }
+.action-card { background: var(--s3); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; border: 1px solid transparent; user-select: none; transition: opacity 0.1s; }
+.action-card:active { opacity: 0.7; }
+.action-card-end { border-color: var(--danger-border); background: var(--danger-dim); }
+.action-card-undo { border-color: var(--border-strong); }
+.ac-label { font-size: 13px; font-weight: 700; color: var(--text); }
+.ac-label-danger { color: var(--danger); }
+.ac-icon { font-size: 18px; }
+.action-card:disabled, .action-card[data-disabled="true"] { opacity: 0.35; pointer-events: none; }
+
+/* Confirm overlay */
+.confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: flex-end; justify-content: center; padding: 0 16px 40px; }
+.confirm-overlay.show { display: flex; }
+.confirm-sheet { background: var(--s3); border-radius: 20px; padding: 24px 20px; width: 100%; max-width: 480px; }
+.confirm-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.confirm-sub { font-size: 13px; color: var(--sub); margin-bottom: 20px; }
+.confirm-btns { display: flex; gap: 10px; }
+.confirm-btn-cancel { flex: 1; padding: 14px; background: var(--s4); border: 1px solid var(--border-strong); border-radius: 12px; color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.confirm-btn-danger { flex: 1; padding: 14px; background: var(--danger-dim); border: 1px solid var(--danger-border); border-radius: 12px; color: var(--danger); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.saved-flash { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--s4); border: 1px solid var(--border-strong); border-radius: 20px; padding: 6px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--you); display: none; z-index: 50; }
+
+/* ── LOG TAB ── */
+.log-feed { padding: 14px 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+.set-divider { display: flex; align-items: center; gap: 10px; margin-top: 4px; cursor: pointer; user-select: none; }
+.set-divider-line { flex: 1; height: 1px; background: var(--border); }
+.set-divider-label { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; color: var(--muted); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.set-chev { display: inline-block; font-size: 8px; color: var(--muted); transition: transform 0.25s; }
+.set-divider.collapsed .set-chev { transform: rotate(-90deg); }
+.set-body { display: flex; flex-direction: column; gap: 10px; overflow: hidden; transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s; }
+.set-body.collapsed { max-height: 0 !important; opacity: 0; pointer-events: none; }
+.game-block { background: var(--s2); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+.game-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; }
+.game-header.clickable { cursor: pointer; user-select: none; }
+.game-header.clickable:active { background: rgba(255,255,255,0.03); }
+.game-header-left { display: flex; align-items: center; gap: 8px; }
+.game-number { font-size: 11px; font-weight: 700; color: var(--sub); letter-spacing: 0.04em; }
+.game-serving { font-size: 9px; color: var(--muted); font-weight: 500; }
+.game-header-right { display: flex; align-items: center; gap: 8px; }
+.game-score-label { font-size: 11px; font-weight: 700; color: var(--sub); font-variant-numeric: tabular-nums; }
+.game-result { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; }
+.gr-p1 { background: var(--you-dim); color: var(--you); border: 1px solid var(--you-border); }
+.gr-p2 { background: var(--opp-dim); color: var(--opp); border: 1px solid var(--opp-border); }
+.gr-live { background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--border-strong); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.5} }
+.game-chev { font-size: 10px; color: var(--muted); transition: transform 0.25s cubic-bezier(0.4,0,0.2,1); margin-left: 2px; display: inline-block; }
+.game-chev.open { transform: rotate(180deg); }
+.game-points { overflow: hidden; transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s; border-top: 1px solid var(--border); }
+.game-points.collapsed { max-height: 0 !important; opacity: 0; border-top: none; }
+.point-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; }
+.point-row + .point-row { border-top: 1px solid var(--border); }
+.point-row.latest { background: rgba(255,255,255,0.02); }
+.winner-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.wd-p1 { background: var(--you); }
+.wd-p2 { background: var(--opp); }
+.point-winner { font-size: 12px; font-weight: 600; min-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-p1 { color: var(--you); }
+.pw-p2 { color: var(--opp); }
+.serve-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.04em; flex-shrink: 0; }
+.sb-1st { background: rgba(61,214,140,0.1); color: var(--you); }
+.sb-2nd { background: rgba(251,191,36,0.1); color: #fbbf24; }
+.sb-df  { background: rgba(239,68,68,0.1); color: #ef4444; }
+.point-score { font-size: 12px; font-weight: 600; color: var(--text); margin-left: auto; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.log-empty { text-align: center; padding: 48px 0; color: var(--muted); font-size: 13px; font-weight: 500; }
+
+/* ── STATS TAB ── */
+.stats-content { padding: 14px 16px 24px; display: flex; flex-direction: column; gap: 14px; }
+.player-toggle { display: flex; background: var(--s2); border-radius: 12px; padding: 4px; position: relative; }
+.pt-bg { position: absolute; top: 4px; height: calc(100% - 8px); width: calc(50% - 2px); border-radius: 9px; transition: left 0.2s cubic-bezier(0.4,0,0.2,1); }
+.pt-btn { flex: 1; position: relative; z-index: 1; text-align: center; padding: 10px 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; user-select: none; border-radius: 9px; color: var(--muted); transition: color 0.15s; }
+.pt-btn.active { color: var(--text); }
+
+/* Arc hero */
+.arc-wrap { display: flex; flex-direction: column; align-items: center; }
+.arc-label { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+
+/* Momentum dots */
+.momentum-wrap { width: 100%; }
+.momentum-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; text-align: center; }
+.momentum-dots { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+.mom-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* Stat WHOOP cards */
+.stat-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-card { background: var(--s3); border-radius: 14px; padding: 14px; }
+.stat-card-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.stat-card-val { font-size: 28px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat-card-sub { font-size: 10px; color: var(--sub); margin-top: 4px; }
+
+/* H2H bars */
+.h2h-section { background: var(--s2); border-radius: 14px; border: 1px solid var(--border); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.h2h-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.h2h-row { display: flex; align-items: center; gap: 8px; }
+.h2h-val { font-size: 12px; font-weight: 700; min-width: 36px; font-variant-numeric: tabular-nums; }
+.h2h-val-p1 { color: var(--you); text-align: left; }
+.h2h-val-p2 { color: var(--opp); text-align: right; }
+.h2h-bar-wrap { flex: 1; height: 5px; background: var(--s4); border-radius: 3px; position: relative; overflow: hidden; }
+.h2h-fill-p1 { position: absolute; top: 0; left: 0; height: 5px; border-radius: 3px; background: var(--you); transition: width 0.4s; }
+.h2h-fill-p2 { position: absolute; top: 0; right: 0; height: 5px; border-radius: 3px; background: var(--opp); transition: width 0.4s; }
+.h2h-row-label { font-size: 10px; color: var(--muted); font-weight: 500; min-width: 80px; text-align: center; }
+
+/* Set breakdown table */
+.set-breakdown { background: var(--s2); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+.sb-head { display: grid; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.sb-row { display: grid; padding: 9px 12px; }
+.sb-row + .sb-row { border-top: 1px solid var(--border); }
+.sb-cell { font-size: 12px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.sb-cell.hd { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.sb-cell.nm { text-align: left; }
+.sb-cell.p1 { color: var(--you); }
+.sb-cell.p2 { color: var(--opp); }
+.sb-cell.win { font-size: 13px; }
+.stats-placeholder { text-align: center; padding: 48px 0; color: var(--muted); font-size: 13px; font-weight: 500; }
+
+/* ── END SCREEN ── */
+#s-end { flex: 1; display: none; flex-direction: column; overflow-y: auto; }
+.end-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 2rem; text-align: center; background: var(--s2); }
+.end-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--you); margin-bottom: 1rem; }
+.end-winner { font-size: 36px; font-weight: 900; letter-spacing: -0.04em; color: var(--text); line-height: 1; margin-bottom: 8px; }
+.end-score { font-size: 20px; font-weight: 700; color: var(--sub); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; margin-bottom: 2rem; }
+.end-actions { display: flex; gap: 10px; width: 100%; }
+.ctrl-btn { flex: 1; background: var(--s3); border: 1px solid var(--border-strong); color: var(--sub); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border-radius: var(--radius-sm); padding: 10px 4px; cursor: pointer; font-family: inherit; }
+.ctrl-btn:active { border-color: var(--you); color: var(--text); }
+.end-log-section { padding: 1.25rem 1.5rem; }
+.log-section-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.log-scroll { max-height: 220px; overflow-y: auto; }
+.log-entry { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+.log-entry:last-child { border-bottom: none; }
+.log-winner { font-size: 12px; font-weight: 700; }
+.log-winner.p0 { color: var(--you); }
+.log-winner.p1 { color: var(--opp); }
+.log-ctx { font-size: 11px; color: var(--muted); text-align: right; line-height: 1.3; }
+.log-tags { font-size: 10px; color: var(--you); opacity: 0.75; }
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- SETUP -->
-  <div id="s-setup">
-    <div class="setup-eyebrow">Tennis Score and Analytics</div>
-    <div class="setup-title">New<br>Match</div>
-    <div id="resume-card" class="resume-card">
-      <div class="rc-label">Match in progress</div>
-      <div class="rc-title" id="rc-title"></div>
-      <div class="rc-detail" id="rc-detail"></div>
-      <div class="rc-btns">
-        <button class="btn-secondary" style="flex:1;" onclick="resumeMatch()">Resume</button>
-        <button class="btn-ghost" style="flex:1;" onclick="clearSaved()">Discard</button>
-      </div>
-    </div>
-    <div class="fields-row">
-      <div class="field-group">
-        <label class="field-label">Player 1</label>
-        <input id="inp-p1" type="text" value="Player 1" oninput="updateServeLabels()" />
-      </div>
-      <div class="field-group">
-        <label class="field-label">Player 2</label>
-        <input id="inp-p2" type="text" value="Player 2" oninput="updateServeLabels()" />
-      </div>
-    </div>
-    <div class="field-group">
-      <label class="field-label">Format</label>
-      <select id="inp-fmt">
-        <option value="3">Best of 3 sets</option>
-        <option value="5">Best of 5 sets</option>
-      </select>
-    </div>
-    <div class="field-group">
-      <label class="field-label">Deciding set</label>
-      <select id="inp-dec">
-        <option value="tb">Tiebreak at 6-6</option>
-        <option value="adv">Advantage (no tiebreak)</option>
-        <option value="stb">Super tiebreak (first to 10)</option>
-      </select>
-    </div>
-    <div class="field-group">
-      <label class="field-label">First serve</label>
-      <div class="serve-pick">
-        <button type="button" class="serve-opt active" id="srv-btn-0" onclick="pickServe(0)">Player 1</button>
-        <button type="button" class="serve-opt" id="srv-btn-1" onclick="pickServe(1)">Player 2</button>
-      </div>
-    </div>
-    <button class="btn-primary" onclick="startMatch()">Start Match</button>
-
-    <div style="display:flex;align-items:center;gap:10px;margin-top:1.25rem;">
-      <div style="flex:1;height:1px;background:var(--border);"></div>
-      <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);">or join existing</span>
-      <div style="flex:1;height:1px;background:var(--border);"></div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:1rem;">
-      <input id="inp-join" type="text" placeholder="Match ID (e.g. ABC123)" maxlength="6"
-        style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:16px;font-family:inherit;padding:12px 14px;outline:none;text-transform:uppercase;letter-spacing:0.1em;"
-        oninput="this.value=this.value.toUpperCase()"
-        onkeydown="if(event.key==='Enter')joinMatch()" />
-      <button onclick="joinMatch()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--accent);font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:12px 16px;cursor:pointer;font-family:inherit;white-space:nowrap;">Join</button>
+<!-- ── SETUP ── -->
+<div id="s-setup">
+  <div class="setup-eyebrow">Tennis Score and Analytics</div>
+  <div class="setup-title">New<br>Match</div>
+  <div id="resume-card" class="resume-card">
+    <div class="rc-label">Match in progress</div>
+    <div class="rc-title" id="rc-title"></div>
+    <div class="rc-detail" id="rc-detail"></div>
+    <div class="rc-btns">
+      <button class="btn-secondary" style="flex:1;" onclick="resumeMatch()">Resume</button>
+      <button class="btn-ghost" style="flex:1;" onclick="clearSaved()">Discard</button>
     </div>
   </div>
-
-  <!-- MATCH -->
-  <div id="s-match">
-    <div class="scoreboard">
-      <div class="sb-header">
-        <span class="sb-label">Tennis Score and Analytics</span>
-        <span class="sb-status" id="sb-status">Set 1</span>
-      </div>
-      <div id="match-id-bar" style="display:none;margin-bottom:0.6rem;">
-        <button onclick="shareMatch()" style="background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 10px;width:100%;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <span style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);">Match ID</span>
-          <span id="match-id-display" style="font-size:15px;font-weight:800;letter-spacing:0.18em;color:var(--accent);font-variant-numeric:tabular-nums;"></span>
-          <span style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Tap to copy</span>
-        </button>
-      </div>
-      <div class="col-headers">
-        <span class="ch-spacer"></span>
-        <span style="flex:1;"></span>
-        <span id="ch-sets" style="display:flex;gap:4px;margin-right:4px;"></span>
-        <span class="ch-games">G</span>
-        <span style="width:6px;"></span>
-        <span class="ch-pts">Pts</span>
-      </div>
-      <div class="player-row">
-        <span class="srv-indicator off" id="dot0"></span>
-        <span class="player-name p0" id="nm0">P1</span>
-        <div class="set-scores" id="sets0"></div>
-        <div class="games-val" id="g0">0</div>
-        <div style="width:6px;"></div>
-        <div class="pts-val p0" id="p0">0</div>
-      </div>
-      <div class="player-row">
-        <span class="srv-indicator off" id="dot1"></span>
-        <span class="player-name p1" id="nm1">P2</span>
-        <div class="set-scores" id="sets1"></div>
-        <div class="games-val" id="g1">0</div>
-        <div style="width:6px;"></div>
-        <div class="pts-val p1" id="p1">0</div>
-      </div>
+  <div class="fields-row">
+    <div class="field-group">
+      <label class="field-label">Player 1</label>
+      <input id="inp-p1" type="text" value="Player 1" oninput="updateServeLabels()" />
     </div>
-
-    <div class="pt-buttons">
-      <button class="pt-btn p0" onclick="awardPoint(0)">
-        <div class="btn-name" id="blbl0">Player 1</div>
-        <div class="btn-sub">won point</div>
-      </button>
-      <button class="pt-btn p1" onclick="awardPoint(1)">
-        <div class="btn-name" id="blbl1">Player 2</div>
-        <div class="btn-sub">won point</div>
-      </button>
-    </div>
-    <div class="serve-strip">
-      <span class="serve-strip-label">Serve</span>
-      <button class="serve-tog tog-1st active" id="tog-1st" onclick="setServeType('1st')">
-        <div class="tog-label">1st</div>
-        <div class="tog-sub">serve</div>
-      </button>
-      <button class="serve-tog tog-2nd" id="tog-2nd" onclick="setServeType('2nd')">
-        <div class="tog-label">2nd</div>
-        <div class="tog-sub">serve</div>
-      </button>
-      <button class="serve-tog tog-df" id="tog-df" onclick="doubleFault()">
-        <div class="tog-label">DF</div>
-        <div class="tog-sub">double fault</div>
-      </button>
-    </div>
-
-    <div class="controls">
-      <button class="ctrl-btn" id="btn-undo" onclick="undo()" disabled>Undo</button>
-      <button class="ctrl-btn" id="btn-reset" onclick="askReset()">Reset</button>
-    </div>
-
-    <div class="confirm-bar" id="confirm-bar">
-      <span>Reset match?</span>
-      <div class="cb-btns">
-        <button class="btn-ghost" onclick="cancelReset()">Cancel</button>
-        <button class="btn-ghost" style="color:var(--danger);border-color:var(--danger);" onclick="doReset()">Reset</button>
-      </div>
-    </div>
-
-    <div class="export-bar">
-      <button class="ctrl-btn" onclick="exportCSV()">Export CSV</button>
-      <button class="ctrl-btn" id="btn-share" onclick="shareMatch()" style="display:none;">Share Link</button>
-    </div>
-
-    <div class="saved-flash" id="saved-flash">Saved</div>
-    <div class="log-section">
-      <div class="log-section-label">Point Log</div>
-      <div class="log-scroll" id="log"></div>
-      <button onclick="initSetup()" style="width:100%;margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:9px;cursor:pointer;font-family:inherit;">⌂ Home</button>
+    <div class="field-group">
+      <label class="field-label">Player 2</label>
+      <input id="inp-p2" type="text" value="Player 2" oninput="updateServeLabels()" />
     </div>
   </div>
-
-  <!-- END -->
-  <div id="s-end">
-    <div class="end-hero">
-      <div class="end-eyebrow">Match complete</div>
-      <div class="end-winner" id="end-winner"></div>
-      <div class="end-score" id="end-score"></div>
-      <div class="end-actions">
-        <button class="ctrl-btn" onclick="exportCSV()">Export CSV</button>
-        <button class="btn-primary" style="flex:2;margin-top:0;" onclick="initSetup()">New Match</button>
-      </div>
-    </div>
-    <div class="end-log-section">
-      <div class="log-section-label">Full Point Log</div>
-      <div class="log-scroll" id="log2" style="max-height:220px;"></div>
+  <div class="field-group">
+    <label class="field-label">Format</label>
+    <select id="inp-fmt">
+      <option value="3">Best of 3 sets</option>
+      <option value="5">Best of 5 sets</option>
+    </select>
+  </div>
+  <div class="field-group">
+    <label class="field-label">Deciding set</label>
+    <select id="inp-dec">
+      <option value="tb">Tiebreak at 6-6</option>
+      <option value="adv">Advantage (no tiebreak)</option>
+      <option value="stb">Super tiebreak (first to 10)</option>
+    </select>
+  </div>
+  <div class="field-group">
+    <label class="field-label">First serve</label>
+    <div class="serve-pick">
+      <button type="button" class="serve-opt active" id="srv-btn-0" onclick="pickServe(0)">Player 1</button>
+      <button type="button" class="serve-opt" id="srv-btn-1" onclick="pickServe(1)">Player 2</button>
     </div>
   </div>
-
+  <button class="btn-primary" onclick="startMatch()">Start Match</button>
+  <div style="display:flex;align-items:center;gap:10px;margin-top:1.25rem;">
+    <div style="flex:1;height:1px;background:var(--border);"></div>
+    <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">or join existing</span>
+    <div style="flex:1;height:1px;background:var(--border);"></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:1rem;">
+    <input id="inp-join" class="join-input" type="text" placeholder="Match ID (e.g. ABC123)" maxlength="6"
+      oninput="this.value=this.value.toUpperCase()"
+      onkeydown="if(event.key==='Enter')joinMatch()" />
+    <button onclick="joinMatch()" style="background:var(--s2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);color:var(--you);font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:12px 16px;cursor:pointer;font-family:inherit;white-space:nowrap;">Join</button>
+  </div>
 </div>
+
+<!-- ── MATCH ── -->
+<div id="s-match">
+  <div class="top-bar">
+    <div class="match-chip" id="match-chip" onclick="shareMatch()" style="display:none;">
+      <div class="live-dot"></div>
+      <span id="match-id-display"></span>
+    </div>
+    <div class="match-chip" id="match-chip-placeholder"><div class="live-dot"></div>LIVE</div>
+    <span class="ctx-label" id="ctx-label">Set 1</span>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('score')">SCORE</div>
+    <div class="tab" onclick="switchTab('log')">LOG</div>
+    <div class="tab" onclick="switchTab('stats')">STATS</div>
+  </div>
+
+  <!-- SCORE TAB -->
+  <div class="tab-panel active" id="tab-score">
+    <div class="score-area">
+      <div class="score-card score-card-p1" onclick="awardPoint(0)" id="card-p1">
+        <div class="sc-serving" id="dot0" style="display:none;"></div>
+        <div class="sc-name" id="sc-name0">Player 1</div>
+        <div class="sc-pts sc-pts-p1" id="sc-pts0">0</div>
+        <div class="sc-games" id="sc-games0">0 games</div>
+      </div>
+      <div class="score-card score-card-p2" onclick="awardPoint(1)" id="card-p2">
+        <div class="sc-serving" id="dot1" style="display:none;background:var(--opp);"></div>
+        <div class="sc-name" id="sc-name1">Player 2</div>
+        <div class="sc-pts sc-pts-p2" id="sc-pts1">0</div>
+        <div class="sc-games" id="sc-games1">0 games</div>
+      </div>
+    </div>
+
+    <div class="sets-table" id="sets-table" style="display:none;">
+      <div class="sets-head" id="sets-head"></div>
+      <div class="sets-row" id="sets-row0"></div>
+      <div class="sets-row" id="sets-row1"></div>
+    </div>
+
+    <div class="serve-seg-wrap">
+      <div class="serve-seg" id="serve-seg">
+        <div class="serve-bg" id="serve-bg"></div>
+        <div class="serve-btn active" id="sbtn-1st" onclick="setServeType('1st')">
+          <div class="serve-btn-label">1st In</div>
+        </div>
+        <div class="serve-btn" id="sbtn-2nd" onclick="setServeType('2nd')">
+          <div class="serve-btn-label">2nd</div>
+        </div>
+        <div class="serve-btn" id="sbtn-df" onclick="doubleFault()">
+          <div class="serve-btn-label" style="color:#ef4444;">Dbl Fault</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-preview" id="stats-preview" style="display:none;">
+      <div class="sp-row">
+        <span class="sp-val sp-val-p1" id="sp-1st-p1">—</span>
+        <div class="sp-bar-wrap">
+          <div class="sp-fill-p1" id="sp-bar-1st-p1" style="width:0%"></div>
+          <div class="sp-fill-p2" id="sp-bar-1st-p2" style="width:0%"></div>
+        </div>
+        <span class="sp-label">1st serve %</span>
+        <span class="sp-val sp-val-p2" id="sp-1st-p2">—</span>
+      </div>
+      <div class="sp-row">
+        <span class="sp-val sp-val-p1" id="sp-pts-p1">—</span>
+        <div class="sp-bar-wrap">
+          <div class="sp-fill-p1" id="sp-bar-pts-p1" style="width:0%"></div>
+          <div class="sp-fill-p2" id="sp-bar-pts-p2" style="width:0%"></div>
+        </div>
+        <span class="sp-label">points won</span>
+        <span class="sp-val sp-val-p2" id="sp-pts-p2">—</span>
+      </div>
+    </div>
+
+    <div class="action-cards">
+      <div class="action-card action-card-undo" id="btn-undo" onclick="undo()" data-disabled="true">
+        <span class="ac-label">Undo</span>
+        <span class="ac-icon">↩</span>
+      </div>
+      <div class="action-card action-card-end" onclick="askEndMatch()">
+        <span class="ac-label ac-label-danger">End Match</span>
+        <span class="ac-icon" style="color:var(--danger);">⬛</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG TAB -->
+  <div class="tab-panel" id="tab-log">
+    <div class="log-feed" id="log-feed">
+      <div class="log-empty">No points yet</div>
+    </div>
+  </div>
+
+  <!-- STATS TAB -->
+  <div class="tab-panel" id="tab-stats">
+    <div class="stats-content" id="stats-content">
+      <div class="stats-placeholder">Start the match to see stats</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── END ── -->
+<div id="s-end">
+  <div class="end-hero">
+    <div class="end-eyebrow">Match complete</div>
+    <div class="end-winner" id="end-winner"></div>
+    <div class="end-score" id="end-score"></div>
+    <div class="end-actions">
+      <button class="ctrl-btn" onclick="exportCSV()">Export CSV</button>
+      <button class="btn-primary" style="flex:2;margin-top:0;" onclick="initSetup()">New Match</button>
+    </div>
+  </div>
+  <div class="end-log-section">
+    <div class="log-section-label">Full Point Log</div>
+    <div class="log-scroll" id="log2"></div>
+  </div>
+</div>
+
+<!-- Confirm overlay -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-sheet">
+    <div class="confirm-title" id="confirm-title">End match?</div>
+    <div class="confirm-sub" id="confirm-sub">This will finalize the match and show the result.</div>
+    <div class="confirm-btns">
+      <button class="confirm-btn-cancel" onclick="hideConfirm()">Cancel</button>
+      <button class="confirm-btn-danger" id="confirm-action-btn">End Match</button>
+    </div>
+  </div>
+</div>
+
+<div class="saved-flash" id="saved-flash">Saved</div>
+
 <script>
-// Firebase init
+// ── Firebase ──
 var firebaseConfig = {
   apiKey: "AIzaSyD-nRfBUHu8prQxVCe1RYpE4niiRSgjD4Q",
   authDomain: "tennis-score-analytics.firebaseapp.com",
@@ -383,10 +469,8 @@ var firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
-
 var DEVICE_ID = Math.random().toString(36).slice(2, 10);
-var MATCH_ID = null;
-var _unsubscribe = null;
+var MATCH_ID = null, _unsubscribe = null;
 
 function generateMatchId() {
   var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -394,13 +478,11 @@ function generateMatchId() {
   for (var i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
   return id;
 }
-
 function setMatchInUrl(id) {
   var url = new URL(window.location.href);
   url.searchParams.set('match', id);
   history.replaceState(null, '', url.toString());
 }
-
 function syncToCloud() {
   if (!MATCH_ID || !M) return;
   try {
@@ -412,266 +494,264 @@ function syncToCloud() {
     }).catch(function(e) { console.warn('Sync error', e); });
   } catch(e) { console.warn('Sync error', e); }
 }
-
 function listenToMatch() {
   if (_unsubscribe) _unsubscribe();
   _unsubscribe = db.collection('matches').doc(MATCH_ID).onSnapshot(function(doc) {
     if (!doc.exists) return;
     var data = doc.data();
-    if (data.updatedBy === DEVICE_ID) return; // our own write, ignore
+    if (data.updatedBy === DEVICE_ID) return;
     if (!data.stateJson) return;
     M = JSON.parse(data.stateJson);
     if (!M.pointLog) M.pointLog = [];
     HIST = [];
-    document.getElementById('log').innerHTML = '';
-    M.pointLog.forEach(function(e) { appendLogDOM(e.winner, e.winnerIdx || 0, e.ctx, e.score, e.serve); });
-    document.getElementById('btn-undo').disabled = true;
+    setUndoState(false);
     if (M.done) {
-      var setWins = [0, 0];
-      M.completedSets.forEach(function(s) { if (s[0] > s[1]) setWins[0]++; else setWins[1]++; });
-      finishMatch(setWins[0] >= M.setsNeeded ? 0 : 1);
-    } else {
-      document.getElementById('nm0').textContent = M.names[0];
-      document.getElementById('nm1').textContent = M.names[1];
-      document.getElementById('blbl0').textContent = M.names[0];
-      document.getElementById('blbl1').textContent = M.names[1];
-      render();
-      flashMsg('Synced •');
-    }
+      var sw = [0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+      finishMatch(sw[0]>=M.setsNeeded?0:1);
+    } else { render(); renderLog(); renderStats(); flashMsg('Synced'); }
   }, function(e) { console.warn('Listen error', e); });
 }
-
 function shareMatch() {
   var url = window.location.href;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url).then(function() { flashMsg('Link copied!'); });
-  } else {
-    prompt('Share this link:', url);
-  }
+  } else { prompt('Share this link:', url); }
 }
-
-function showMatchCode(id) {
-  document.getElementById('match-id-bar').style.display = 'block';
+function showMatchChip(id) {
+  document.getElementById('match-chip').style.display = 'flex';
+  document.getElementById('match-chip-placeholder').style.display = 'none';
   document.getElementById('match-id-display').textContent = id;
-  var el = document.getElementById('match-code');
-  if (el) { document.getElementById('match-code-val').textContent = id; el.style.display = 'block'; }
-  document.getElementById('btn-share').style.display = '';
 }
-
 function joinMatch() {
   var id = document.getElementById('inp-join').value.trim().toUpperCase();
   if (id.length < 4) { alert('Enter a valid Match ID'); return; }
   MATCH_ID = id;
   db.collection('matches').doc(id).get().then(function(doc) {
-    if (!doc.exists || !doc.data().stateJson) { alert('Match not found. Check the ID and try again.'); return; }
+    if (!doc.exists || !doc.data().stateJson) { alert('Match not found.'); return; }
     M = JSON.parse(doc.data().stateJson);
     if (!M.pointLog) M.pointLog = [];
     HIST = [];
-    document.getElementById('log').innerHTML = '';
-    M.pointLog.forEach(function(e) { appendLogDOM(e.winner, e.winnerIdx || 0, e.ctx, e.score, e.serve); });
-    setMatchInUrl(id);
-    showMatchCode(id);
-    listenToMatch();
+    setMatchInUrl(id); showMatchChip(id); listenToMatch();
     if (M.done) {
-      var setWins = [0, 0];
-      M.completedSets.forEach(function(s) { if (s[0] > s[1]) setWins[0]++; else setWins[1]++; });
-      finishMatch(setWins[0] >= M.setsNeeded ? 0 : 1);
-    } else {
-      showMatch();
-    }
-  }).catch(function(e) { alert('Error loading match. Try again.'); });
+      var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+      finishMatch(sw[0]>=M.setsNeeded?0:1);
+    } else { showMatch(); }
+  }).catch(function() { alert('Error loading match.'); });
 }
 
-// Core state
+// ── Core state ──
 var M = null, HIST = [], PTS = ['0','15','30','40'], SAVE_KEY = 'court_tracker_v2';
-var firstServer = 0;
+var firstServer = 0, _serveType = '1st', _statsPlayer = 0;
 
 function pickServe(idx) {
   firstServer = idx;
-  document.getElementById('srv-btn-0').className = 'serve-opt' + (idx === 0 ? ' active' : '');
-  document.getElementById('srv-btn-1').className = 'serve-opt' + (idx === 1 ? ' active' : '');
+  document.getElementById('srv-btn-0').className = 'serve-opt' + (idx===0?' active':'');
+  document.getElementById('srv-btn-1').className = 'serve-opt' + (idx===1?' active':'');
 }
-
 function updateServeLabels() {
   var p1 = document.getElementById('inp-p1').value.trim() || 'Player 1';
   var p2 = document.getElementById('inp-p2').value.trim() || 'Player 2';
   document.getElementById('srv-btn-0').textContent = p1;
   document.getElementById('srv-btn-1').textContent = p2;
 }
-
 function isDeciding() { return M.completedSets.length === M.totalSets - 1; }
-
-function save() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ state: M })); } catch(e) {}
-  syncToCloud();
-}
-function loadSaved() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch(e) { return null; } }
-function clearSaved() { try { localStorage.removeItem(SAVE_KEY); } catch(e) {} document.getElementById('resume-card').style.display = 'none'; }
-
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({state:M})); } catch(e){} syncToCloud(); }
+function loadSaved() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch(e){ return null; } }
+function clearSaved() { try { localStorage.removeItem(SAVE_KEY); } catch(e){} document.getElementById('resume-card').style.display='none'; }
 function checkResume() {
   var d = loadSaved();
   if (d && d.state && !d.state.done) {
     document.getElementById('resume-card').style.display = 'block';
-    document.getElementById('rc-title').textContent = d.state.names[0] + ' vs ' + d.state.names[1];
-    var sets = d.state.completedSets.map(function(s) { return s[0] + '-' + s[1]; }).join(' ');
-    document.getElementById('rc-detail').textContent = (sets ? 'Sets: ' + sets + ' | ' : '') + 'Games: ' + d.state.games[0] + '-' + d.state.games[1];
+    document.getElementById('rc-title').textContent = d.state.names[0]+' vs '+d.state.names[1];
+    var sets = d.state.completedSets.map(function(s){return s[0]+'-'+s[1];}).join(' ');
+    document.getElementById('rc-detail').textContent = (sets?'Sets: '+sets+' | ':'')+'Games: '+d.state.games[0]+'-'+d.state.games[1];
   }
 }
-
 function resumeMatch() {
   var d = loadSaved(); if (!d) return;
-  M = d.state; if (!M.pointLog) M.pointLog = []; if (!M.pointNum) M.pointNum = 0;
+  M = d.state; if (!M.pointLog) M.pointLog=[]; if (!M.pointNum) M.pointNum=0;
   HIST = [];
-  document.getElementById('log').innerHTML = '';
-  M.pointLog.forEach(function(e) { appendLogDOM(e.winner, e.winnerIdx || 0, e.ctx, e.score, e.serve); });
-  // Reconnect to Firestore if URL has match ID
   var urlId = new URLSearchParams(window.location.search).get('match');
-  if (urlId) { MATCH_ID = urlId; showMatchCode(urlId); listenToMatch(); }
+  if (urlId) { MATCH_ID = urlId; showMatchChip(urlId); listenToMatch(); }
   showMatch();
 }
-
 function startMatch() {
-  var p1 = document.getElementById('inp-p1').value.trim() || 'Player 1';
-  var p2 = document.getElementById('inp-p2').value.trim() || 'Player 2';
+  var p1 = document.getElementById('inp-p1').value.trim()||'Player 1';
+  var p2 = document.getElementById('inp-p2').value.trim()||'Player 2';
   var fmt = parseInt(document.getElementById('inp-fmt').value);
   var dec = document.getElementById('inp-dec').value;
-  M = {
-    names: [p1, p2], setsNeeded: fmt === 5 ? 3 : 2, totalSets: fmt, dec: dec,
-    completedSets: [], games: [0, 0], pts: [0, 0], serving: firstServer,
-    mode: 'normal', tbPts: [0, 0], tbServeToggle: 0, done: false,
-    pointLog: [], pointNum: 0
-  };
+  M = { names:[p1,p2], setsNeeded:fmt===5?3:2, totalSets:fmt, dec:dec,
+    completedSets:[], games:[0,0], pts:[0,0], serving:firstServer,
+    mode:'normal', tbPts:[0,0], tbServeToggle:0, done:false, pointLog:[], pointNum:0 };
   HIST = []; clearSaved();
-  document.getElementById('log').innerHTML = '';
   MATCH_ID = generateMatchId();
-  setMatchInUrl(MATCH_ID);
-  showMatchCode(MATCH_ID);
-  listenToMatch();
-  save();
-  showMatch();
+  setMatchInUrl(MATCH_ID); showMatchChip(MATCH_ID); listenToMatch();
+  save(); showMatch();
 }
-
 function showMatch() {
   document.getElementById('s-setup').style.display = 'none';
   document.getElementById('s-match').style.display = 'flex';
   document.getElementById('s-match').style.flexDirection = 'column';
   document.getElementById('s-end').style.display = 'none';
-  document.getElementById('nm0').textContent = M.names[0];
-  document.getElementById('nm1').textContent = M.names[1];
-  document.getElementById('blbl0').textContent = M.names[0];
-  document.getElementById('blbl1').textContent = M.names[1];
-  document.getElementById('btn-undo').disabled = HIST.length === 0;
-  cancelReset(); render();
+  setUndoState(HIST.length > 0);
+  switchTab('score');
+  render(); renderLog(); renderStats();
 }
-
 function initSetup() {
   M = null; HIST = [];
   if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
   MATCH_ID = null;
-  history.replaceState(null, '', window.location.pathname);
+  history.replaceState(null,'',window.location.pathname);
   document.getElementById('s-setup').style.display = 'flex';
   document.getElementById('s-match').style.display = 'none';
   document.getElementById('s-end').style.display = 'none';
-  document.getElementById('match-id-bar').style.display = 'none';
-  document.getElementById('btn-share').style.display = 'none';
+  document.getElementById('match-chip').style.display = 'none';
+  document.getElementById('match-chip-placeholder').style.display = 'flex';
   document.getElementById('inp-join').value = '';
   checkResume();
 }
 
-function askReset() { document.getElementById('confirm-bar').style.display = 'flex'; document.getElementById('btn-reset').style.display = 'none'; }
-function cancelReset() { document.getElementById('confirm-bar').style.display = 'none'; document.getElementById('btn-reset').style.display = ''; }
-function doReset() {
-  cancelReset(); clearSaved();
-  initSetup();
+// ── Tab switching ──
+function switchTab(name) {
+  var panels = ['score','log','stats'];
+  panels.forEach(function(p) {
+    document.getElementById('tab-'+p).classList.toggle('active', p===name);
+  });
+  document.querySelectorAll('.tab').forEach(function(t,i) {
+    t.classList.toggle('active', ['score','log','stats'][i]===name);
+  });
+  if (name==='log') renderLog();
+  if (name==='stats') renderStats();
 }
 
-function snap() { return JSON.parse(JSON.stringify(M)); }
-
-function scoreLabel() {
-  var sets = M.completedSets.map(function(s) { return s[0] + '-' + s[1]; }).join(' ');
-  return (sets ? sets + ' | ' : '') + ptsDisplay(0) + '-' + ptsDisplay(1) + ' | G:' + M.games[0] + '-' + M.games[1];
+// ── Confirm overlay ──
+var _confirmAction = null;
+function askEndMatch() {
+  _confirmAction = function() { forceEndMatch(); };
+  document.getElementById('confirm-title').textContent = 'End match?';
+  document.getElementById('confirm-sub').textContent = 'This will finalize the match and show the result.';
+  document.getElementById('confirm-action-btn').textContent = 'End Match';
+  document.getElementById('confirm-action-btn').onclick = function() { hideConfirm(); if(_confirmAction)_confirmAction(); };
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+function hideConfirm() { document.getElementById('confirm-overlay').classList.remove('show'); }
+function forceEndMatch() {
+  if (!M) return;
+  var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+  var w = sw[0]>=sw[1]?0:1;
+  M.done = true; save(); finishMatch(w);
 }
 
-var _serveType = '1st';
-
+// ── Serve selector ──
 function setServeType(t) {
   _serveType = t;
-  document.getElementById('tog-1st').className = 'serve-tog tog-1st' + (t === '1st' ? ' active' : '');
-  document.getElementById('tog-2nd').className = 'serve-tog tog-2nd' + (t === '2nd' ? ' active' : '');
+  ['1st','2nd','df'].forEach(function(k) {
+    document.getElementById('sbtn-'+k).classList.toggle('active', k===t||(t==='df'&&false));
+  });
+  document.getElementById('sbtn-1st').classList.toggle('active', t==='1st');
+  document.getElementById('sbtn-2nd').classList.toggle('active', t==='2nd');
+  positionServeBg(t);
+}
+function positionServeBg(t) {
+  var bg = document.getElementById('serve-bg');
+  var seg = document.getElementById('serve-seg');
+  var idx = t==='1st'?0:t==='2nd'?1:2;
+  var w = seg.offsetWidth;
+  var btnW = (w - 8) / 3;
+  bg.style.left = (4 + idx * btnW) + 'px';
+  bg.style.width = btnW + 'px';
 }
 
+// ── Scoring ──
+function snap() { return JSON.parse(JSON.stringify(M)); }
+function scoreLabel() {
+  var sets = M.completedSets.map(function(s){return s[0]+'-'+s[1];}).join(' ');
+  return (sets?sets+' | ':'')+ptsDisplay(0)+'-'+ptsDisplay(1)+' | G:'+M.games[0]+'-'+M.games[1];
+}
+function getCtx() {
+  if (M.mode==='tiebreak') return 'S'+(M.completedSets.length+1)+' TB';
+  if (M.mode==='supertb')  return 'Super TB';
+  return 'S'+(M.completedSets.length+1)+' G'+(M.games[0]+M.games[1]+1);
+}
 function doubleFault() {
-  if (!M || M.done) return;
-  var receiver = 1 - M.serving;
+  if (!M||M.done) return;
+  var receiver = 1-M.serving;
   HIST.push(snap());
-  M.pointNum = (M.pointNum || 0) + 1;
-  var ctx = getCtx(), score = scoreLabel(), srv = M.names[M.serving];
-  if (M.mode === 'tiebreak') scoreTB(receiver, 7);
-  else if (M.mode === 'supertb') scoreTB(receiver, 10);
+  M.pointNum = (M.pointNum||0)+1;
+  var ctx=getCtx(), score=scoreLabel(), srv=M.names[M.serving];
+  var gameNumBefore = M.games[0]+M.games[1]+1;
+  var setNumBefore  = M.completedSets.length+1;
+  if (M.mode==='tiebreak') scoreTB(receiver,7);
+  else if (M.mode==='supertb') scoreTB(receiver,10);
   else scoreNormal(receiver);
-  var ts = new Date().toISOString();
-  var entry = { point: M.pointNum, winner: M.names[receiver], winnerIdx: receiver, server: srv, set: M.completedSets.length + 1, ctx: ctx, score: score, mode: M.mode === 'normal' ? 'regular' : M.mode, ts: ts, serve: 'Double Fault' };
+  var entry = { point:M.pointNum, winner:M.names[receiver], winnerIdx:receiver,
+    server:srv, set:setNumBefore, gameNum:gameNumBefore,
+    ctx:ctx, score:score, mode:M.mode==='normal'?'regular':M.mode,
+    ts:new Date().toISOString(), serve:'Double Fault' };
   M.pointLog.push(entry);
-  appendLogDOM(entry.winner, entry.winnerIdx, entry.ctx, entry.score, entry.serve);
-  setServeType('1st');
-  save(); flashSaved();
-  document.getElementById('btn-undo').disabled = false;
-  render();
+  setServeType('1st'); setUndoState(true);
+  save(); flashSaved(); render(); renderLog(); renderStats();
 }
-
 function awardPoint(w) {
-  if (!M || M.done) return;
+  if (!M||M.done) return;
   HIST.push(snap());
-  M.pointNum = (M.pointNum || 0) + 1;
-  var ctx = getCtx(), score = scoreLabel(), srv = M.names[M.serving];
-  var serveType = _serveType;
-  if (M.mode === 'tiebreak') scoreTB(w, 7);
-  else if (M.mode === 'supertb') scoreTB(w, 10);
+  M.pointNum = (M.pointNum||0)+1;
+  var ctx=getCtx(), score=scoreLabel(), srv=M.names[M.serving];
+  var serveType=_serveType;
+  var gameNumBefore = M.games[0]+M.games[1]+1;
+  var setNumBefore  = M.completedSets.length+1;
+  if (M.mode==='tiebreak') scoreTB(w,7);
+  else if (M.mode==='supertb') scoreTB(w,10);
   else scoreNormal(w);
-  var ts = new Date().toISOString();
-  var entry = { point: M.pointNum, winner: M.names[w], winnerIdx: w, server: srv, set: M.completedSets.length + 1, ctx: ctx, score: score, mode: M.mode === 'normal' ? 'regular' : M.mode, ts: ts, serve: serveType };
+  var entry = { point:M.pointNum, winner:M.names[w], winnerIdx:w,
+    server:srv, set:setNumBefore, gameNum:gameNumBefore,
+    ctx:ctx, score:score, mode:M.mode==='normal'?'regular':M.mode,
+    ts:new Date().toISOString(), serve:serveType };
   M.pointLog.push(entry);
-  appendLogDOM(entry.winner, entry.winnerIdx, entry.ctx, entry.score, entry.serve);
-  setServeType('1st');
-  save(); flashSaved();
-  document.getElementById('btn-undo').disabled = false;
-  render();
+  setServeType('1st'); setUndoState(true);
+  save(); flashSaved(); render(); renderLog(); renderStats();
 }
-
 function scoreNormal(w) {
   M.pts[w]++;
-  if (M.pts[w] >= 4 && M.pts[w] - M.pts[1 - w] >= 2) winGame(w);
+  if (M.pts[w]>=4 && M.pts[w]-M.pts[1-w]>=2) winGame(w);
 }
-function scoreTB(w, target) {
+function scoreTB(w,target) {
   M.tbPts[w]++; M.tbServeToggle++;
-  if (M.tbServeToggle === 1 || M.tbServeToggle % 2 === 0) M.serving = 1 - M.serving;
-  if (M.tbPts[w] >= target && M.tbPts[w] - M.tbPts[1 - w] >= 2) winSet(w);
+  if (M.tbServeToggle===1||M.tbServeToggle%2===0) M.serving=1-M.serving;
+  if (M.tbPts[w]>=target&&M.tbPts[w]-M.tbPts[1-w]>=2) winSet(w);
 }
 function winGame(w) {
-  M.games[w]++; M.pts = [0, 0]; M.serving = 1 - M.serving;
-  var gw = M.games[w], gl = M.games[1 - w], dec = isDeciding();
-  if ((gw >= 6 && gw - gl >= 2) || (gw === 7 && gl === 5)) { winSet(w); }
-  else if (gw === 6 && gl === 6) {
-    if (dec && M.dec === 'adv') { /* keep playing */ }
-    else { M.mode = 'tiebreak'; M.tbPts = [0, 0]; M.tbServeToggle = 0; }
-  } else if (dec && M.dec === 'adv' && gw >= 7 && gw - gl >= 2) { winSet(w); }
+  M.games[w]++; M.pts=[0,0]; M.serving=1-M.serving;
+  var gw=M.games[w],gl=M.games[1-w],dec=isDeciding();
+  if ((gw>=6&&gw-gl>=2)||(gw===7&&gl===5)) winSet(w);
+  else if (gw===6&&gl===6) {
+    if (dec&&M.dec==='adv') {}
+    else { M.mode='tiebreak'; M.tbPts=[0,0]; M.tbServeToggle=0; }
+  } else if (dec&&M.dec==='adv'&&gw>=7&&gw-gl>=2) winSet(w);
 }
 function winSet(w) {
-  var g0 = M.games[0], g1 = M.games[1];
-  if (M.mode === 'tiebreak') { g0 = w === 0 ? 7 : 6; g1 = w === 1 ? 7 : 6; }
-  else if (M.mode === 'supertb') { g0 = w === 0 ? 1 : 0; g1 = w === 1 ? 1 : 0; }
-  M.completedSets.push([g0, g1]);
-  M.games = [0, 0]; M.pts = [0, 0]; M.tbPts = [0, 0]; M.tbServeToggle = 0; M.mode = 'normal';
-  var won = M.completedSets.filter(function(s) { return s[w] > s[1 - w]; }).length;
-  if (won >= M.setsNeeded) { M.done = true; finishMatch(w); return; }
-  if (isDeciding() && M.dec === 'stb') { M.mode = 'supertb'; M.tbPts = [0, 0]; M.tbServeToggle = 0; }
+  var g0=M.games[0],g1=M.games[1];
+  if (M.mode==='tiebreak'){g0=w===0?7:6;g1=w===1?7:6;}
+  else if (M.mode==='supertb'){g0=w===0?1:0;g1=w===1?1:0;}
+  M.completedSets.push([g0,g1]);
+  M.games=[0,0]; M.pts=[0,0]; M.tbPts=[0,0]; M.tbServeToggle=0; M.mode='normal';
+  var won=M.completedSets.filter(function(s){return s[w]>s[1-w];}).length;
+  if (won>=M.setsNeeded){M.done=true;finishMatch(w);return;}
+  if (isDeciding()&&M.dec==='stb'){M.mode='supertb';M.tbPts=[0,0];M.tbServeToggle=0;}
 }
 function finishMatch(w) {
   save();
-  var sets = M.completedSets.map(function(s) { return s[0] + '-' + s[1]; }).join('  ');
-  document.getElementById('end-winner').textContent = M.names[w] + ' wins';
+  var sets=M.completedSets.map(function(s){return s[0]+'-'+s[1];}).join('  ');
+  document.getElementById('end-winner').textContent = M.names[w]+' wins';
   document.getElementById('end-score').textContent = sets;
-  document.getElementById('log2').innerHTML = document.getElementById('log').innerHTML;
+  // populate end log
+  var log2 = document.getElementById('log2'); log2.innerHTML = '';
+  (M.pointLog||[]).slice().reverse().forEach(function(e) {
+    var d = document.createElement('div'); d.className='log-entry';
+    var tag = e.serve ? '<br><span class="log-tags">'+esc(e.serve)+' serve</span>' : '';
+    d.innerHTML = '<span class="log-winner p'+(e.winnerIdx||0)+'">'+esc(e.winner)+'</span><span class="log-ctx">'+esc(e.ctx)+'<br>'+esc(e.score)+tag+'</span>';
+    log2.appendChild(d);
+  });
   document.getElementById('s-match').style.display = 'none';
   document.getElementById('s-end').style.display = 'flex';
   document.getElementById('s-end').style.flexDirection = 'column';
@@ -679,81 +759,443 @@ function finishMatch(w) {
 function undo() {
   if (!HIST.length) return;
   M = HIST.pop();
-  var log = document.getElementById('log');
-  if (log.lastElementChild) log.removeChild(log.lastElementChild);
-  save(); document.getElementById('btn-undo').disabled = HIST.length === 0; cancelReset(); render();
+  save(); setUndoState(HIST.length>0);
+  render(); renderLog(); renderStats();
 }
-function getCtx() {
-  if (M.mode === 'tiebreak') return 'Set ' + (M.completedSets.length + 1) + ' TB';
-  if (M.mode === 'supertb') return 'Super TB';
-  return 'S' + (M.completedSets.length + 1) + ' G' + (M.games[0] + M.games[1] + 1);
+function setUndoState(enabled) {
+  var btn = document.getElementById('btn-undo');
+  btn.dataset.disabled = enabled ? 'false' : 'true';
+  btn.style.opacity = enabled ? '1' : '0.35';
+  btn.style.pointerEvents = enabled ? '' : 'none';
 }
-function appendLogDOM(winner, winnerIdx, ctx, score, serve) {
-  var log = document.getElementById('log');
-  var d = document.createElement('div'); d.className = 'log-entry';
-  var tag = serve ? '<br><span class="log-tags">' + esc(serve) + ' serve</span>' : '';
-  d.innerHTML = '<span class="log-winner p' + winnerIdx + '">' + esc(winner) + '</span><span class="log-ctx">' + esc(ctx) + '<br>' + esc(score) + tag + '</span>';
-  log.appendChild(d); log.scrollTop = log.scrollHeight;
-}
-function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function ptsDisplay(idx) {
-  if (M.mode === 'tiebreak' || M.mode === 'supertb') return String(M.tbPts[idx]);
-  var pw = M.pts[0], pl = M.pts[1];
-  if (pw >= 3 && pl >= 3) { if (pw === pl) return 'D'; return (pw > pl ? idx === 0 : idx === 1) ? 'Ad' : '-'; }
-  return PTS[M.pts[idx]] || '0';
+  if (M.mode==='tiebreak'||M.mode==='supertb') return String(M.tbPts[idx]);
+  var pw=M.pts[0],pl=M.pts[1];
+  if (pw>=3&&pl>=3){if(pw===pl)return 'D';return(pw>pl?idx===0:idx===1)?'Ad':'-';}
+  return PTS[M.pts[idx]]||'0';
 }
-function flashSaved() { flashMsg('Saved'); }
-function flashMsg(msg) {
-  var f = document.getElementById('saved-flash');
-  f.textContent = msg;
-  f.style.display = 'block';
-  clearTimeout(f._t);
-  f._t = setTimeout(function() { f.style.display = 'none'; }, 1500);
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function flashSaved(){flashMsg('Saved');}
+function flashMsg(msg){
+  var f=document.getElementById('saved-flash');
+  f.textContent=msg; f.style.display='block';
+  clearTimeout(f._t); f._t=setTimeout(function(){f.style.display='none';},1500);
 }
 function exportCSV() {
-  if (!M || !M.pointLog || !M.pointLog.length) { alert('No points recorded yet.'); return; }
-  var rows = ['point,timestamp,winner,server,set,context,score_before,mode,serve'];
-  M.pointLog.forEach(function(e) {
-    rows.push([e.point, e.ts || '', '"' + e.winner + '"', '"' + e.server + '"', e.set, '"' + e.ctx + '"', '"' + e.score + '"', e.mode, e.serve || ''].join(','));
+  if (!M||!M.pointLog||!M.pointLog.length){alert('No points recorded yet.');return;}
+  var rows=['point,timestamp,winner,server,set,context,score_before,mode,serve'];
+  M.pointLog.forEach(function(e){
+    rows.push([e.point,e.ts||'','"'+e.winner+'"','"'+e.server+'"',e.set,'"'+e.ctx+'"','"'+e.score+'"',e.mode,e.serve||''].join(','));
   });
-  var now = new Date();
-  var pad = function(n) { return String(n).padStart(2,'0'); };
-  var datePart = now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate());
-  var timePart = pad(now.getHours()) + pad(now.getMinutes());
-  var tzPart = Intl.DateTimeFormat('en', {timeZoneName:'short'}).formatToParts(now).find(function(p){return p.type==='timeZoneName';}).value || 'UTC';
-  var slug = function(s) { return s.trim().replace(/[^a-zA-Z0-9]+/g,'_'); };
-  var fname = slug(M.names[0]) + '_vs_' + slug(M.names[1]) + '_' + datePart + '_' + timePart + '_' + tzPart + '.csv';
-  dl(fname, rows.join('\n'), 'text/csv');
-}
-function dl(name, text, type) {
-  var b = new Blob([text], { type: type }), u = URL.createObjectURL(b), a = document.createElement('a');
-  a.href = u; a.download = name; a.click(); URL.revokeObjectURL(u);
-}
-function render() {
-  if (!M) return;
-  var n = M.totalSets;
-  var chSets = document.getElementById('ch-sets'); chSets.innerHTML = '';
-  for (var i = 1; i <= n; i++) { var s = document.createElement('span'); s.className = 'ch-lbl'; s.textContent = 'S' + i; chSets.appendChild(s); }
-  for (var p = 0; p < 2; p++) {
-    document.getElementById('dot' + p).className = 'srv-indicator ' + (M.serving === p ? 'on' : 'off');
-    var se = document.getElementById('sets' + p); se.innerHTML = '';
-    for (var s = 0; s < M.completedSets.length; s++) { var sp = document.createElement('span'); sp.className = 'set-pip'; sp.textContent = M.completedSets[s][p]; se.appendChild(sp); }
-    for (var j = M.completedSets.length; j < n; j++) { var sp = document.createElement('span'); sp.className = 'set-pip dim'; sp.textContent = '-'; se.appendChild(sp); }
-    document.getElementById('g' + p).textContent = M.games[p];
-    document.getElementById('p' + p).textContent = ptsDisplay(p);
-  }
-  var st = '';
-  if (M.mode === 'tiebreak') st = 'Set ' + (M.completedSets.length + 1) + ' Tiebreak · First to 7';
-  else if (M.mode === 'supertb') st = 'Super Tiebreak · First to 10';
-  else {
-    var pw = M.pts[0], pl = M.pts[1];
-    if (pw >= 3 && pl >= 3) st = (pw === pl) ? 'Deuce' : 'Advantage ' + M.names[pw > pl ? 0 : 1];
-    else st = 'Set ' + (M.completedSets.length + 1);
-  }
-  document.getElementById('sb-status').textContent = st;
+  var now=new Date(), pad=function(n){return String(n).padStart(2,'0');};
+  var datePart=now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate());
+  var timePart=pad(now.getHours())+pad(now.getMinutes());
+  var tzPart=Intl.DateTimeFormat('en',{timeZoneName:'short'}).formatToParts(now).find(function(p){return p.type==='timeZoneName';}).value||'UTC';
+  var slug=function(s){return s.trim().replace(/[^a-zA-Z0-9]+/g,'_');};
+  var fname=slug(M.names[0])+'_vs_'+slug(M.names[1])+'_'+datePart+'_'+timePart+'_'+tzPart+'.csv';
+  var b=new Blob([rows.join('\n')],{type:'text/csv'}),u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u;a.download=fname;a.click();URL.revokeObjectURL(u);
 }
 
-// On load: check if URL has a match ID to join
+// ── Render: Score tab ──
+function render() {
+  if (!M) return;
+  // Names
+  document.getElementById('sc-name0').textContent = M.names[0];
+  document.getElementById('sc-name1').textContent = M.names[1];
+  // Points
+  document.getElementById('sc-pts0').textContent = ptsDisplay(0);
+  document.getElementById('sc-pts1').textContent = ptsDisplay(1);
+  // Games
+  document.getElementById('sc-games0').textContent = M.games[0]+' game'+(M.games[0]!==1?'s':'');
+  document.getElementById('sc-games1').textContent = M.games[1]+' game'+(M.games[1]!==1?'s':'');
+  // Serving dots
+  document.getElementById('dot0').style.display = M.serving===0 ? 'block' : 'none';
+  document.getElementById('dot1').style.display = M.serving===1 ? 'block' : 'none';
+  // Context label
+  var st='';
+  if (M.mode==='tiebreak') st='Set '+(M.completedSets.length+1)+' Tiebreak';
+  else if (M.mode==='supertb') st='Super Tiebreak';
+  else {
+    var pw=M.pts[0],pl=M.pts[1];
+    if (pw>=3&&pl>=3) st=(pw===pl)?'Deuce':'Advantage '+M.names[pw>pl?0:1];
+    else st='Set '+(M.completedSets.length+1)+' · Game '+(M.games[0]+M.games[1]+1);
+  }
+  document.getElementById('ctx-label').textContent = st;
+
+  // Sets table
+  var n = M.totalSets;
+  var hasSets = M.completedSets.length > 0;
+  var tbl = document.getElementById('sets-table');
+  tbl.style.display = '';
+  // Build column template: [dot 6px] [name flex] [sets...] [games]
+  var cols = '6px 1fr ' + Array(n).fill('28px').join(' ') + ' 36px';
+  document.getElementById('sets-head').style.gridTemplateColumns = cols;
+  document.getElementById('sets-row0').style.gridTemplateColumns = cols;
+  document.getElementById('sets-row1').style.gridTemplateColumns = cols;
+  // Head row
+  var head = document.getElementById('sets-head');
+  head.innerHTML = '<span></span><span></span>';
+  for (var i=0;i<n;i++){var s=document.createElement('span');s.className='sr-cell hd';s.textContent='S'+(i+1);head.appendChild(s);}
+  var gh=document.createElement('span');gh.className='sr-cell hd';gh.textContent='Gm';head.appendChild(gh);
+  // Player rows
+  for (var p=0;p<2;p++){
+    var row=document.getElementById('sets-row'+p);
+    row.innerHTML='';
+    var dot=document.createElement('span');
+    if (M.serving===p){dot.className='sr-dot';}else{dot.className='sr-nodot';}
+    row.appendChild(dot);
+    var nm=document.createElement('span');
+    nm.className='sr-name '+(p===0?'sr-name-p1':'sr-name-p2');
+    nm.textContent=M.names[p];
+    row.appendChild(nm);
+    for (var s=0;s<n;s++){
+      var cell=document.createElement('span');
+      if (s<M.completedSets.length){
+        var v=M.completedSets[s][p],vo=M.completedSets[s][1-p];
+        cell.className='sr-cell'+(v>vo?' '+(p===0?'sr-name-p1':'sr-name-p2'):'');
+        cell.textContent=String(v);
+      } else if (s===M.completedSets.length){
+        cell.className='sr-cell live';cell.textContent=String(M.games[p]);
+      } else {
+        cell.className='sr-cell dim';cell.textContent='–';
+      }
+      row.appendChild(cell);
+    }
+    var gc=document.createElement('span');gc.className='sr-cell';gc.textContent=String(M.games[p]);row.appendChild(gc);
+  }
+
+  // Stats preview (show after first point)
+  if (M.pointLog && M.pointLog.length > 0) {
+    document.getElementById('stats-preview').style.display = 'flex';
+    var st2 = computeStats(0);
+    var st3 = computeStats(1);
+    var s1p = st2.firstServeIn, s1o = st3.firstServeIn;
+    var spp = st2.ptsWonPct, spo = st3.ptsWonPct;
+    document.getElementById('sp-1st-p1').textContent = isNaN(s1p)?'—':Math.round(s1p)+'%';
+    document.getElementById('sp-1st-p2').textContent = isNaN(s1o)?'—':Math.round(s1o)+'%';
+    document.getElementById('sp-bar-1st-p1').style.width = (isNaN(s1p)?0:s1p/2)+'%';
+    document.getElementById('sp-bar-1st-p2').style.width = (isNaN(s1o)?0:s1o/2)+'%';
+    document.getElementById('sp-pts-p1').textContent = isNaN(spp)?'—':Math.round(spp)+'%';
+    document.getElementById('sp-pts-p2').textContent = isNaN(spo)?'—':Math.round(spo)+'%';
+    document.getElementById('sp-bar-pts-p1').style.width = (isNaN(spp)?0:spp/2)+'%';
+    document.getElementById('sp-bar-pts-p2').style.width = (isNaN(spo)?0:spo/2)+'%';
+  }
+}
+
+// ── Render: Log tab ──
+function renderLog() {
+  if (!M || !M.pointLog || !M.pointLog.length) {
+    document.getElementById('log-feed').innerHTML = '<div class="log-empty">No points yet</div>';
+    return;
+  }
+  // Group by set, then by gameNum within set
+  var sets = {}; // setNum → { gameNum → [entries] }
+  var setOrder = [];
+  M.pointLog.forEach(function(e) {
+    var s = e.set || 1;
+    var g = e.gameNum || 1;
+    if (!sets[s]) { sets[s] = {}; setOrder.push(s); }
+    if (!sets[s][g]) sets[s][g] = [];
+    sets[s][g].push(e);
+  });
+  // Determine set winners from completedSets
+  var feed = document.getElementById('log-feed');
+  feed.innerHTML = '';
+  // Current set number
+  var currentSet = (M.completedSets.length + 1);
+  // Reverse set order (most recent first)
+  var setNums = setOrder.slice().reverse();
+  setNums.forEach(function(sNum, si) {
+    var isCurrentSet = sNum === currentSet;
+    var setGames = sets[sNum];
+    var gameNums = Object.keys(setGames).map(Number).sort(function(a,b){return b-a;}); // most recent first
+    // Set divider
+    var divId = 'sd-'+sNum;
+    var bodyId = 'sb-'+sNum;
+    var setLabel;
+    if (isCurrentSet) {
+      setLabel = 'SET '+sNum+' — IN PROGRESS';
+    } else {
+      var cs = M.completedSets[sNum-1];
+      if (cs) {
+        var winner = cs[0]>cs[1]?M.names[0]:M.names[1];
+        setLabel = 'SET '+sNum+' — '+winner.toUpperCase()+' '+cs[0]+' · '+M.names[cs[0]>cs[1]?1:0].toUpperCase()+' '+cs[1];
+      } else {
+        setLabel = 'SET '+sNum;
+      }
+    }
+    var divEl = document.createElement('div');
+    divEl.className = 'set-divider' + (isCurrentSet?'':' collapsed');
+    divEl.id = divId;
+    divEl.innerHTML = '<div class="set-divider-line"></div><div class="set-divider-label">'+esc(setLabel)+' <span class="set-chev">▼</span></div><div class="set-divider-line"></div>';
+    divEl.onclick = (function(bid, did) { return function() { toggleLogSet(bid, did); }; })(bodyId, divId);
+    feed.appendChild(divEl);
+    var bodyEl = document.createElement('div');
+    bodyEl.className = 'set-body' + (isCurrentSet?'':' collapsed');
+    bodyEl.id = bodyId;
+    bodyEl.style.maxHeight = isCurrentSet ? '9999px' : '0';
+    bodyEl.style.opacity = isCurrentSet ? '1' : '0';
+    // Games within set
+    var totalGamesInSet = Object.keys(setGames).length;
+    // Determine game-level scores from completedSets info
+    // We need cumulative game scores at end of each game in this set
+    // Approximate: reconstruct from log entries - look at ctx score string
+    gameNums.forEach(function(gNum, gi) {
+      var entries = setGames[gNum];
+      var isLiveGame = isCurrentSet && gi===0; // most recent game in current set
+      var lastEntry = entries[entries.length-1];
+      // Parse games score from last entry score field: format "S1 G3 · 40-15 | G:3-2"
+      // score field: "Sets... | 40-15 | G:3-2" — let's parse G:x-y
+      var gScoreMatch = (lastEntry.score||'').match(/G:(\d+)-(\d+)/);
+      var gScore = gScoreMatch ? [parseInt(gScoreMatch[1]),parseInt(gScoreMatch[2])] : null;
+      // Determine game winner — was the game completed?
+      // A game completes when the score resets. Check if next-earlier game exists.
+      // If this is the live game, we don't have a winner yet.
+      var gameResult = null; // null = live, 0 = p1 won, 1 = p2 won
+      if (!isLiveGame) {
+        // Find who won this game: the last point in this game goes to the winner
+        // In completed games the point after "Game" would reset. We know from data.
+        // Actually we can figure out from the game score at end vs beginning.
+        // Simpler: look at entry with score containing "Game" in pts display
+        // Or just use the last entry's winner
+        gameResult = lastEntry.winnerIdx;
+      }
+      // Server name from first entry
+      var serverName = entries[0] ? entries[0].server : '';
+      var blockId = 'gb-s'+sNum+'-g'+gNum;
+      var ptsId = blockId+'-pts';
+      var chevId = blockId+'-chev';
+      var block = document.createElement('div');
+      block.className = 'game-block';
+      var headerHtml = '<div class="game-header'+(isLiveGame?'':' clickable')+'" '+(isLiveGame?'':('onclick="toggleLogGame(\''+ptsId+'\',\''+chevId+'\')"'))+'>'+
+        '<div class="game-header-left"><span class="game-number">Game '+gNum+'</span>'+
+        (serverName?'<span class="game-serving">· '+esc(serverName)+' serving</span>':'')+'</div>'+
+        '<div class="game-header-right">'+
+        (gScore?'<span class="game-score-label">'+gScore[0]+' – '+gScore[1]+'</span>':'');
+      if (isLiveGame) {
+        headerHtml += '<span class="game-result gr-live">LIVE</span>';
+      } else if (gameResult===0) {
+        headerHtml += '<span class="game-result gr-p1">'+esc(M.names[0])+'</span>';
+      } else {
+        headerHtml += '<span class="game-result gr-p2">'+esc(M.names[1])+'</span>';
+      }
+      headerHtml += (isLiveGame?'':'<span class="game-chev" id="'+chevId+'">▼</span>');
+      headerHtml += '</div></div>';
+      // Point rows (most recent first)
+      var rowsHtml = '';
+      var revEntries = entries.slice().reverse();
+      revEntries.forEach(function(e, ri) {
+        var srvClass = e.serve==='Double Fault'?'sb-df':e.serve==='2nd'?'sb-2nd':'sb-1st';
+        var srvLabel = e.serve==='Double Fault'?'Dbl Fault':e.serve==='2nd'?'2nd':'1st In';
+        var isLatest = isLiveGame && ri===0;
+        // Parse score display from the score field
+        var ptsMatch = (e.score||'').match(/(\S+)-(\S+)\s*\|/);
+        var displayScore = ptsMatch ? ptsMatch[1]+' – '+ptsMatch[2] : '';
+        rowsHtml += '<div class="point-row'+(isLatest?' latest':'')+'">'+
+          '<div class="winner-dot wd-p'+(e.winnerIdx===0?'1':'2')+'"></div>'+
+          '<span class="point-winner pw-p'+(e.winnerIdx===0?'1':'2')+'">'+esc(e.winner)+'</span>'+
+          '<span class="serve-badge '+srvClass+'">'+srvLabel+'</span>'+
+          '<span class="point-score">'+esc(displayScore)+'</span>'+
+          '</div>';
+      });
+      block.innerHTML = headerHtml +
+        '<div class="game-points'+(isLiveGame?'':' collapsed')+'" id="'+ptsId+'" style="max-height:'+(isLiveGame?'9999px':'0')+';opacity:'+(isLiveGame?'1':'0')+';">'+
+        rowsHtml+'</div>';
+      bodyEl.appendChild(block);
+    });
+    feed.appendChild(bodyEl);
+  });
+}
+
+function toggleLogSet(bodyId, divId) {
+  var body = document.getElementById(bodyId);
+  var div  = document.getElementById(divId);
+  if (!body) return;
+  var isOpen = !body.classList.contains('collapsed');
+  if (isOpen) {
+    body.style.maxHeight='0'; body.style.opacity='0';
+    body.classList.add('collapsed'); div.classList.add('collapsed');
+  } else {
+    body.classList.remove('collapsed'); div.classList.remove('collapsed');
+    body.style.maxHeight='9999px'; body.style.opacity='1';
+  }
+}
+function toggleLogGame(ptsId, chevId) {
+  var pts=document.getElementById(ptsId), chev=document.getElementById(chevId);
+  if (!pts) return;
+  var isOpen=!pts.classList.contains('collapsed');
+  if (isOpen){pts.style.maxHeight='0';pts.style.opacity='0';pts.classList.add('collapsed');if(chev)chev.classList.remove('open');}
+  else{pts.classList.remove('collapsed');pts.style.maxHeight='9999px';pts.style.opacity='1';if(chev)chev.classList.add('open');}
+}
+
+// ── Stats computation ──
+function computeStats(playerIdx) {
+  var log = M.pointLog || [];
+  var total = log.length;
+  var ptsWon = log.filter(function(e){return e.winnerIdx===playerIdx;}).length;
+  var serving = log.filter(function(e){return e.server===M.names[playerIdx];});
+  var returning = log.filter(function(e){return e.server!==M.names[playerIdx];});
+  var first = serving.filter(function(e){return e.serve==='1st';});
+  var firstWon = first.filter(function(e){return e.winnerIdx===playerIdx;});
+  var second = serving.filter(function(e){return e.serve==='2nd';});
+  var secondWon = second.filter(function(e){return e.winnerIdx===playerIdx;});
+  var df = serving.filter(function(e){return e.serve==='Double Fault';});
+  var retWon = returning.filter(function(e){return e.winnerIdx===playerIdx;});
+  return {
+    ptsWon: ptsWon,
+    total: total,
+    ptsWonPct: total ? ptsWon/total*100 : NaN,
+    serving: serving.length,
+    firstServeIn: serving.length ? first.length/(serving.length-df.length/2||1)*100 : NaN,
+    firstServeWinPct: first.length ? firstWon.length/first.length*100 : NaN,
+    secondServeWinPct: second.length ? secondWon.length/second.length*100 : NaN,
+    doubleFaults: df.length,
+    returnWon: retWon.length,
+    returnTotal: returning.length,
+    returnWonPct: returning.length ? retWon.length/returning.length*100 : NaN
+  };
+}
+
+// ── Render: Stats tab ──
+function renderStats() {
+  if (!M) return;
+  var sc = document.getElementById('stats-content');
+  if (!M.pointLog || M.pointLog.length < 2) {
+    sc.innerHTML = '<div class="stats-placeholder">Play a few points to see stats</div>';
+    return;
+  }
+  var p = _statsPlayer;
+  var s = computeStats(p);
+  var so = computeStats(1-p);
+  var fmt = function(v, sfx) { return isNaN(v)?'—':Math.round(v)+(sfx||''); };
+  var pct = function(v) { return isNaN(v)?0:Math.max(0,Math.min(100,v)); };
+  // Momentum: last 20 points colored dots
+  var recent = (M.pointLog||[]).slice(-20);
+  var momDots = recent.map(function(e){
+    var c = e.winnerIdx===p ? 'var(--you)' : 'var(--opp)';
+    return '<div class="mom-dot" style="background:'+c+'"></div>';
+  }).join('');
+  // Arc: points won pct
+  var arcPct = isNaN(s.ptsWonPct)?50:s.ptsWonPct;
+  var arcColor = p===0?'var(--you)':'var(--opp)';
+  var totalArc = 264;
+  var arcOffset = totalArc - (arcPct/100)*totalArc;
+  var arcTextColor = arcPct>=50?'var(--you)':'var(--opp)';
+
+  // Set breakdown
+  var setRowsHtml = '';
+  M.completedSets.forEach(function(cs, i) {
+    var w0=cs[0]>cs[1], w1=cs[1]>cs[0];
+    setRowsHtml+='<div class="sb-row" style="grid-template-columns:1fr 32px 32px;">'+
+      '<span class="sb-cell nm" style="font-size:11px;color:var(--sub)">Set '+(i+1)+'</span>'+
+      '<span class="sb-cell win '+(w0?'p1':'')+'">'+cs[0]+'</span>'+
+      '<span class="sb-cell win '+(w1?'p2':'')+'">'+cs[1]+'</span>'+
+      '</div>';
+  });
+  if (!setRowsHtml) setRowsHtml='<div style="text-align:center;padding:12px;font-size:11px;color:var(--muted)">No completed sets yet</div>';
+
+  sc.innerHTML =
+    // Player toggle
+    '<div class="player-toggle">'+
+      '<div class="pt-bg" id="pt-bg"></div>'+
+      '<div class="pt-btn '+(p===0?'active':'')+'" onclick="statsToggle(0)" id="pt-btn-0">'+esc(M.names[0])+'</div>'+
+      '<div class="pt-btn '+(p===1?'active':'')+'" onclick="statsToggle(1)" id="pt-btn-1">'+esc(M.names[1])+'</div>'+
+    '</div>'+
+    // Arc + momentum
+    '<div class="arc-wrap">'+
+      '<div class="arc-label">POINTS WON</div>'+
+      '<svg width="220" height="134" viewBox="0 0 220 134" fill="none" xmlns="http://www.w3.org/2000/svg">'+
+        '<path d="M 26 104 A 84 84 0 0 1 194 104" stroke="#1e252f" stroke-width="11" stroke-linecap="round" fill="none"/>'+
+        '<path d="M 26 104 A 84 84 0 0 1 194 104" stroke="'+arcColor+'" stroke-width="11" stroke-linecap="round" fill="none" stroke-dasharray="264" stroke-dashoffset="'+arcOffset.toFixed(1)+'"/>'+
+        '<text x="110" y="98" text-anchor="middle" font-size="38" font-weight="800" fill="'+arcTextColor+'" font-family="-apple-system,sans-serif">'+fmt(s.ptsWonPct,'%')+'</text>'+
+        '<text x="110" y="127" text-anchor="middle" font-size="10" fill="#8b9ab0" font-family="-apple-system,sans-serif">of all points</text>'+
+      '</svg>'+
+      '<div class="momentum-wrap">'+
+        '<div class="momentum-label">MOMENTUM (LAST '+recent.length+' PTS)</div>'+
+        '<div class="momentum-dots">'+momDots+'</div>'+
+      '</div>'+
+    '</div>'+
+    // Serve cards
+    '<div class="stat-cards">'+
+      '<div class="stat-card"><div class="stat-card-label">1ST SERVE IN</div><div class="stat-card-val" style="color:'+arcColor+'">'+fmt(s.firstServeIn,'%')+'</div><div class="stat-card-sub">'+s.serving+' serves played</div></div>'+
+      '<div class="stat-card"><div class="stat-card-label">1ST SERVE WON</div><div class="stat-card-val" style="color:'+arcColor+'">'+fmt(s.firstServeWinPct,'%')+'</div><div class="stat-card-sub">when 1st serve in</div></div>'+
+      '<div class="stat-card"><div class="stat-card-label">2ND SERVE WON</div><div class="stat-card-val" style="color:'+arcColor+'">'+fmt(s.secondServeWinPct,'%')+'</div><div class="stat-card-sub">when 2nd serve</div></div>'+
+      '<div class="stat-card"><div class="stat-card-label">DOUBLE FAULTS</div><div class="stat-card-val" style="color:var(--danger)">'+s.doubleFaults+'</div><div class="stat-card-sub">this match</div></div>'+
+    '</div>'+
+    // Return cards
+    '<div class="stat-cards">'+
+      '<div class="stat-card"><div class="stat-card-label">RETURN WON</div><div class="stat-card-val" style="color:'+arcColor+'">'+fmt(s.returnWonPct,'%')+'</div><div class="stat-card-sub">on return games</div></div>'+
+      '<div class="stat-card"><div class="stat-card-label">POINTS WON</div><div class="stat-card-val" style="color:'+arcColor+'">'+s.ptsWon+' / '+s.total+'</div><div class="stat-card-sub">total points</div></div>'+
+    '</div>'+
+    // H2H bars
+    '<div class="h2h-section">'+
+      '<div class="h2h-label">HEAD TO HEAD</div>'+
+      '<div class="h2h-row">'+
+        '<span class="h2h-val h2h-val-p1">'+fmt(s.firstServeIn,'%')+'</span>'+
+        '<div class="h2h-bar-wrap"><div class="h2h-fill-p1" style="width:'+pct(s.firstServeIn)/2+'%"></div><div class="h2h-fill-p2" style="width:'+pct(so.firstServeIn)/2+'%"></div></div>'+
+        '<span class="h2h-row-label">1st serve %</span>'+
+        '<span class="h2h-val h2h-val-p2">'+fmt(so.firstServeIn,'%')+'</span>'+
+      '</div>'+
+      '<div class="h2h-row">'+
+        '<span class="h2h-val h2h-val-p1">'+fmt(s.ptsWonPct,'%')+'</span>'+
+        '<div class="h2h-bar-wrap"><div class="h2h-fill-p1" style="width:'+pct(s.ptsWonPct)/2+'%"></div><div class="h2h-fill-p2" style="width:'+pct(so.ptsWonPct)/2+'%"></div></div>'+
+        '<span class="h2h-row-label">points won</span>'+
+        '<span class="h2h-val h2h-val-p2">'+fmt(so.ptsWonPct,'%')+'</span>'+
+      '</div>'+
+      '<div class="h2h-row">'+
+        '<span class="h2h-val h2h-val-p1">'+fmt(s.returnWonPct,'%')+'</span>'+
+        '<div class="h2h-bar-wrap"><div class="h2h-fill-p1" style="width:'+pct(s.returnWonPct)/2+'%"></div><div class="h2h-fill-p2" style="width:'+pct(so.returnWonPct)/2+'%"></div></div>'+
+        '<span class="h2h-row-label">return points</span>'+
+        '<span class="h2h-val h2h-val-p2">'+fmt(so.returnWonPct,'%')+'</span>'+
+      '</div>'+
+    '</div>'+
+    // Set breakdown
+    '<div class="set-breakdown">'+
+      '<div class="sb-head" style="grid-template-columns:1fr 32px 32px;">'+
+        '<span class="sb-cell hd nm">Set</span>'+
+        '<span class="sb-cell hd" style="text-align:center">'+esc(M.names[0])+'</span>'+
+        '<span class="sb-cell hd" style="text-align:center">'+esc(M.names[1])+'</span>'+
+      '</div>'+
+      setRowsHtml+
+    '</div>';
+  // Position player toggle pill
+  requestAnimationFrame(function() {
+    var bg = document.getElementById('pt-bg');
+    if (!bg) return;
+    var wrap = bg.parentElement;
+    var w = wrap.offsetWidth;
+    var half = (w - 8) / 2;
+    bg.style.width = half+'px';
+    bg.style.top = '4px';
+    bg.style.height = 'calc(100% - 8px)';
+    if (p===0) {
+      bg.style.left = '4px';
+      bg.style.background = 'rgba(61,214,140,0.12)';
+      bg.style.border = '1px solid rgba(61,214,140,0.35)';
+    } else {
+      bg.style.left = (4+half)+'px';
+      bg.style.background = 'rgba(249,115,22,0.1)';
+      bg.style.border = '1px solid rgba(249,115,22,0.3)';
+    }
+    bg.style.borderRadius = '9px';
+    bg.style.position = 'absolute';
+    bg.style.transition = 'left 0.2s cubic-bezier(0.4,0,0.2,1)';
+  });
+}
+function statsToggle(idx) {
+  _statsPlayer = idx;
+  renderStats();
+}
+
+// ── Init serve bg position ──
+window.addEventListener('load', function() {
+  requestAnimationFrame(function() {
+    positionServeBg('1st');
+  });
+});
+
+// ── URL match load ──
 (function() {
   var urlId = new URLSearchParams(window.location.search).get('match');
   if (urlId) {
@@ -761,21 +1203,15 @@ function render() {
     db.collection('matches').doc(urlId).get().then(function(doc) {
       if (doc.exists && doc.data().stateJson) {
         M = JSON.parse(doc.data().stateJson);
-        if (!M.pointLog) M.pointLog = [];
-        HIST = [];
-        document.getElementById('log').innerHTML = '';
-        M.pointLog.forEach(function(e) { appendLogDOM(e.winner, e.winnerIdx || 0, e.ctx, e.score, e.serve); });
-        showMatchCode(urlId);
-        listenToMatch();
+        if (!M.pointLog) M.pointLog=[];
+        HIST=[];
+        showMatchChip(urlId); listenToMatch();
         if (M.done) {
-          var setWins = [0, 0];
-          M.completedSets.forEach(function(s) { if (s[0] > s[1]) setWins[0]++; else setWins[1]++; });
-          finishMatch(setWins[0] >= M.setsNeeded ? 0 : 1);
-        } else {
-          showMatch();
-        }
+          var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+          finishMatch(sw[0]>=M.setsNeeded?0:1);
+        } else { showMatch(); }
       }
-    }).catch(function(e) { console.warn('Load error', e); });
+    }).catch(function(e){ console.warn('Load error',e); });
     return;
   }
   checkResume();
