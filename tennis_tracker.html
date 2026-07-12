@@ -574,6 +574,12 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
 var DEVICE_ID = Math.random().toString(36).slice(2, 10);
+var OWNER_ID = (function() {
+  var k = 'court_tracker_owner_id';
+  var id = localStorage.getItem(k);
+  if (!id) { id = Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2); localStorage.setItem(k, id); }
+  return id;
+})();
 var MATCH_ID = null, _unsubscribe = null;
 
 function generateMatchId() {
@@ -750,12 +756,43 @@ function saveToArchive() {
   archive.unshift({ id:MATCH_ID, names:M.names, date:new Date().toISOString(), completedSets:M.completedSets, winner:winner, totalSets:M.totalSets });
   localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive.slice(0,100)));
 }
-function showArchive() {
-  document.getElementById('s-setup').style.display = 'none';
-  document.getElementById('s-end').style.display = 'none';
-  document.getElementById('s-match').style.display = 'none';
-  document.getElementById('s-archive').style.display = 'flex';
-  document.getElementById('s-archive').style.flexDirection = 'column';
+function saveToFirestore() {
+  if (!MATCH_ID || !M) return;
+  var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+  var winner = sw[0]>sw[1]?0:1;
+  db.collection('completed_matches').doc(MATCH_ID).set({
+    id: MATCH_ID,
+    ownerId: OWNER_ID,
+    names: M.names,
+    date: new Date().toISOString(),
+    completedSets: M.completedSets,
+    winner: winner,
+    totalSets: M.totalSets,
+    pointLog: M.pointLog || [],
+    savedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(e){ console.warn('Firestore archive failed:', e); });
+}
+function syncArchiveFromFirestore(callback) {
+  db.collection('completed_matches')
+    .where('ownerId', '==', OWNER_ID)
+    .orderBy('savedAt', 'desc')
+    .limit(100)
+    .get()
+    .then(function(snap) {
+      if (snap.empty) { if (callback) callback(); return; }
+      var archive = loadArchive();
+      snap.forEach(function(doc) {
+        var d = doc.data();
+        if (!archive.find(function(e){ return e.id === d.id; })) {
+          archive.push({ id:d.id, names:d.names, date:d.date, completedSets:d.completedSets, winner:d.winner, totalSets:d.totalSets });
+        }
+      });
+      archive.sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+      localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive.slice(0,100)));
+      if (callback) callback();
+    }).catch(function(e){ console.warn('Firestore sync failed:', e); if (callback) callback(); });
+}
+function renderArchiveList() {
   var list = document.getElementById('archive-list');
   var archive = loadArchive();
   if (!archive.length) { list.innerHTML = '<div class="archive-empty">No matches recorded yet.<br>Play a match to see it here.</div>'; return; }
@@ -780,18 +817,38 @@ function showArchive() {
     list.appendChild(card);
   });
 }
+function showArchive() {
+  document.getElementById('s-setup').style.display = 'none';
+  document.getElementById('s-end').style.display = 'none';
+  document.getElementById('s-match').style.display = 'none';
+  document.getElementById('s-archive').style.display = 'flex';
+  document.getElementById('s-archive').style.flexDirection = 'column';
+  var list = document.getElementById('archive-list');
+  list.innerHTML = '<div class="archive-empty" style="color:var(--muted);">Syncing matches…</div>';
+  syncArchiveFromFirestore(function() { renderArchiveList(); });
+}
 function loadArchiveMatch(id) {
   MATCH_ID = id;
+  // Try live matches doc first; fall back to completed_matches archive
   db.collection('matches').doc(id).get().then(function(doc) {
-    if (!doc.exists || !doc.data().stateJson) {
-      alert('Match data expired or not found. Firestore keeps matches for 7 days.');
-      return;
+    if (doc.exists && doc.data().stateJson) {
+      M = JSON.parse(doc.data().stateJson);
+      if (!M.pointLog) M.pointLog = [];
+      HIST = [];
+      setMatchInUrl(id); showMatchChip(id);
+      browseCompletedMatch();
+    } else {
+      return db.collection('completed_matches').doc(id).get().then(function(arc) {
+        if (!arc.exists) { alert('Match data not found.'); return; }
+        var d = arc.data();
+        M = { names: d.names, completedSets: d.completedSets, totalSets: d.totalSets,
+              pointLog: d.pointLog||[], done: true, pts:[0,0], games:[0,0],
+              tbPts:[0,0], mode:'normal', serving:0, setsNeeded:Math.ceil(d.totalSets/2) };
+        HIST = [];
+        setMatchInUrl(id); showMatchChip(id);
+        browseCompletedMatch();
+      });
     }
-    M = JSON.parse(doc.data().stateJson);
-    if (!M.pointLog) M.pointLog = [];
-    HIST = [];
-    setMatchInUrl(id); showMatchChip(id);
-    browseCompletedMatch();
   }).catch(function(){ alert('Error loading match.'); });
 }
 
@@ -935,6 +992,7 @@ function winSet(w) {
 function finishMatch(w) {
   save();
   saveToArchive();
+  saveToFirestore();
   var sets=M.completedSets.map(function(s){return s[0]+'-'+s[1];}).join('  ');
   document.getElementById('end-winner').textContent = M.names[w]+' wins';
   document.getElementById('end-score').textContent = sets;
