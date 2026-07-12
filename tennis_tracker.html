@@ -82,14 +82,14 @@ html, body {
 
 /* ── SCORE TAB ── */
 .score-area { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 16px 0; }
-.score-card { border-radius: 16px; padding: 24px 12px 22px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; user-select: none; transition: transform 0.08s, opacity 0.08s; position: relative; }
+.score-card { border-radius: 16px; padding: 28px 12px 26px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; user-select: none; transition: transform 0.08s, opacity 0.08s; position: relative; }
 .score-card:active { transform: scale(0.96); opacity: 0.85; }
 .score-card-p1 { background: var(--you-dim); border: 1.5px solid var(--you-border); }
 .score-card-p2 { background: var(--opp-dim); border: 1.5px solid var(--opp-border); }
 .sc-serving { width: 13px; height: 13px; flex-shrink: 0; }
 .sc-name-row { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; }
 .sc-name { font-size: 11px; font-weight: 700; color: var(--sub); letter-spacing: 0.04em; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sc-pts { font-size: 96px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
+.sc-pts { font-size: 108px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
 .sc-pts-p1 { color: var(--text); }
 .sc-pts-p2 { color: var(--muted); }
 .sc-games { font-size: 12px; font-weight: 600; color: var(--sub); }
@@ -114,7 +114,7 @@ html, body {
 .serve-seg { background: var(--s2); border-radius: 12px; padding: 4px; position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; }
 .serve-bg { position: absolute; top: 4px; height: calc(100% - 8px); width: calc(33.33% - 2.67px); border-radius: 9px; background: var(--s4); transition: left 0.2s cubic-bezier(0.4,0,0.2,1); pointer-events: none; }
 .serve-btn { position: relative; z-index: 1; padding: 10px 4px; text-align: center; cursor: pointer; border-radius: 9px; user-select: none; }
-.serve-btn-label { font-size: 11px; font-weight: 700; color: var(--muted); transition: color 0.15s; }
+.serve-btn-label { font-size: 13px; font-weight: 700; color: var(--muted); transition: color 0.15s; padding: 6px 0; }
 .serve-btn.active .serve-btn-label { color: var(--text); }
 
 /* Stats preview bars */
@@ -130,7 +130,7 @@ html, body {
 
 /* WHOOP action cards */
 .action-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 16px 20px; }
-.action-card { background: var(--s3); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; border: 1px solid transparent; user-select: none; transition: opacity 0.1s; }
+.action-card { background: var(--s3); border-radius: 14px; padding: 18px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; border: 1px solid transparent; user-select: none; transition: opacity 0.1s; }
 .action-card:active { opacity: 0.7; }
 .action-card-end { border-color: var(--danger-border); background: var(--danger-dim); }
 .action-card-undo { border-color: var(--border-strong); }
@@ -431,7 +431,6 @@ html, body {
           <div class="sc-name" id="sc-name0">Player 1</div>
         </div>
         <div class="sc-pts sc-pts-p1" id="sc-pts0">0</div>
-        <div class="sc-games" id="sc-games0">0 games</div>
       </div>
       <div class="score-card score-card-p2" onclick="awardPoint(1)" id="card-p2">
         <div class="sc-name-row">
@@ -439,7 +438,6 @@ html, body {
           <div class="sc-name" id="sc-name1">Player 2</div>
         </div>
         <div class="sc-pts sc-pts-p2" id="sc-pts1">0</div>
-        <div class="sc-games" id="sc-games1">0 games</div>
       </div>
     </div>
 
@@ -447,13 +445,13 @@ html, body {
       <div class="serve-seg" id="serve-seg">
         <div class="serve-bg" id="serve-bg"></div>
         <div class="serve-btn active" id="sbtn-1st" onclick="setServeType('1st')">
-          <div class="serve-btn-label">1st In</div>
+          <div class="serve-btn-label">1st</div>
         </div>
         <div class="serve-btn" id="sbtn-2nd" onclick="setServeType('2nd')">
           <div class="serve-btn-label">2nd</div>
         </div>
         <div class="serve-btn" id="sbtn-df" onclick="doubleFault()">
-          <div class="serve-btn-label" style="color:#ef4444;">Dbl Fault</div>
+          <div class="serve-btn-label" style="color:#ef4444;">DF</div>
         </div>
       </div>
     </div>
@@ -492,7 +490,7 @@ html, body {
       </div>
       <div class="action-card action-card-end" onclick="askEndMatch()">
         <span class="ac-label ac-label-danger">End Match</span>
-        <span class="ac-icon" style="color:var(--danger);">⬛</span>
+        <span class="ac-icon" style="color:var(--danger);">🏁</span>
       </div>
     </div>
   </div>
@@ -1212,11 +1210,9 @@ function render() {
   document.getElementById('sc-pts0').textContent = ptsDisplay(0);
   document.getElementById('sc-pts1').textContent = ptsDisplay(1);
   // Games
-  document.getElementById('sc-games0').textContent = M.games[0]+' game'+(M.games[0]!==1?'s':'');
-  document.getElementById('sc-games1').textContent = M.games[1]+' game'+(M.games[1]!==1?'s':'');
   // Serving balls
   var BALL_ACTIVE='<circle cx="9" cy="9" r="8.5" fill="#c8e63a" stroke="#a8c420" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/>';
-  var BALL_GRAY='<circle cx="9" cy="9" r="8.5" fill="#1e2126" stroke="#2d3139" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="#3d4450" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="#3d4450" stroke-width="1.2" fill="none" stroke-linecap="round"/>';
+  var BALL_GRAY='<circle cx="9" cy="9" r="8.5" fill="#3a4a1a" stroke="#4e6422" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="#7a9a30" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="#7a9a30" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>';
   var d0=document.getElementById('dot0'), d1=document.getElementById('dot1');
   d0.style.display='inline'; d0.innerHTML=M.serving===0?BALL_ACTIVE:BALL_GRAY;
   d1.style.display='inline'; d1.innerHTML=M.serving===1?BALL_ACTIVE:BALL_GRAY;
@@ -1259,7 +1255,7 @@ function render() {
       dot.innerHTML='<circle cx="9" cy="9" r="8.5" fill="#c8e63a" stroke="#a8c420" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/>';
     }else{
       dot.className.baseVal='sr-nodot';
-      dot.innerHTML='<circle cx="9" cy="9" r="8.5" fill="#1e2126" stroke="#2d3139" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="#3d4450" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="#3d4450" stroke-width="1.2" fill="none" stroke-linecap="round"/>';
+      dot.innerHTML='<circle cx="9" cy="9" r="8.5" fill="#3a4a1a" stroke="#4e6422" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="#7a9a30" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="#7a9a30" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>';
     }
     row.appendChild(dot);
     var nm=document.createElement('span');
