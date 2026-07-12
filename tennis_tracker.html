@@ -1236,8 +1236,8 @@ function render() {
   var hasSets = M.completedSets.length > 0;
   var tbl = document.getElementById('sets-table');
   tbl.style.display = '';
-  // Build column template: [dot 6px] [name flex] [sets...] [games]
-  var cols = '6px 1fr ' + Array(n).fill('28px').join(' ') + ' 36px';
+  // Build column template: [dot 18px] [name flex] [sets...] [games]
+  var cols = '18px 1fr ' + Array(n).fill('28px').join(' ') + ' 36px';
   document.getElementById('sets-head').style.gridTemplateColumns = cols;
   document.getElementById('sets-row0').style.gridTemplateColumns = cols;
   document.getElementById('sets-row1').style.gridTemplateColumns = cols;
