@@ -86,7 +86,7 @@ html, body {
 .score-card:active { transform: scale(0.96); opacity: 0.85; }
 .score-card-p1 { background: var(--you-dim); border: 1.5px solid var(--you-border); }
 .score-card-p2 { background: rgba(255,255,255,0.02); border: 1.5px solid rgba(255,255,255,0.08); }
-.sc-serving { position: absolute; top: 10px; right: 10px; width: 6px; height: 6px; border-radius: 50%; background: var(--you); }
+.sc-serving { position: absolute; top: 8px; right: 10px; width: 16px; height: 16px; }
 .sc-name { font-size: 11px; font-weight: 700; color: var(--sub); letter-spacing: 0.04em; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-pts { font-size: 72px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
 .sc-pts-p1 { color: var(--text); }
@@ -105,8 +105,8 @@ html, body {
 .sr-cell.dim { color: var(--muted); }
 .sr-cell.hd { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .sr-cell.live { color: var(--you); }
-.sr-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--you); }
-.sr-nodot { width: 6px; height: 6px; }
+.sr-dot { width: 14px; height: 14px; flex-shrink: 0; }
+.sr-nodot { width: 14px; height: 14px; flex-shrink: 0; }
 
 /* WHOOP segmented serve selector */
 .serve-seg-wrap { padding: 12px 16px 0; }
@@ -425,13 +425,13 @@ html, body {
     </div>
     <div class="score-area">
       <div class="score-card score-card-p1" onclick="awardPoint(0)" id="card-p1">
-        <div class="sc-serving" id="dot0" style="display:none;"></div>
+        <svg class="sc-serving" id="dot0" style="display:none;" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8.5" fill="#c8e63a" stroke="#a8c420" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/></svg>
         <div class="sc-name" id="sc-name0">Player 1</div>
         <div class="sc-pts sc-pts-p1" id="sc-pts0">0</div>
         <div class="sc-games" id="sc-games0">0 games</div>
       </div>
       <div class="score-card score-card-p2" onclick="awardPoint(1)" id="card-p2">
-        <div class="sc-serving" id="dot1" style="display:none;background:var(--opp);"></div>
+        <svg class="sc-serving" id="dot1" style="display:none;" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8.5" fill="#c8e63a" stroke="#a8c420" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/></svg>
         <div class="sc-name" id="sc-name1">Player 2</div>
         <div class="sc-pts sc-pts-p2" id="sc-pts1">0</div>
         <div class="sc-games" id="sc-games1">0 games</div>
@@ -1242,8 +1242,17 @@ function render() {
   for (var p=0;p<2;p++){
     var row=document.getElementById('sets-row'+p);
     row.innerHTML='';
-    var dot=document.createElement('span');
-    if (M.serving===p){dot.className='sr-dot';}else{dot.className='sr-nodot';}
+    var dot=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    dot.setAttribute('viewBox','0 0 18 18');
+    dot.setAttribute('fill','none');
+    dot.setAttribute('xmlns','http://www.w3.org/2000/svg');
+    if (M.serving===p){
+      dot.className.baseVal='sr-dot';
+      dot.innerHTML='<circle cx="9" cy="9" r="8.5" fill="#c8e63a" stroke="#a8c420" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/>';
+    }else{
+      dot.className.baseVal='sr-nodot';
+      dot.innerHTML='<circle cx="9" cy="9" r="8.5" fill="#1e2126" stroke="#2d3139" stroke-width="0.5"/><path d="M2.5 6.5 Q5 9 2.5 11.5" stroke="#3d4450" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M15.5 6.5 Q13 9 15.5 11.5" stroke="#3d4450" stroke-width="1.2" fill="none" stroke-linecap="round"/>';
+    }
     row.appendChild(dot);
     var nm=document.createElement('span');
     nm.className='sr-name '+(p===0?'sr-name-p1':'sr-name-p2');
