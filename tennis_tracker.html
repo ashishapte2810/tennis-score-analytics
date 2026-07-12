@@ -342,6 +342,15 @@ html, body {
 
   <!-- SCORE TAB -->
   <div class="tab-panel active" id="tab-score">
+    <!-- Read-only ended banner -->
+    <div id="ended-banner" style="display:none;margin:12px 16px 0;background:var(--s2);border:1px solid var(--border-strong);border-radius:14px;padding:14px 16px;display:none;align-items:center;justify-content:space-between;gap:12px;">
+      <div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.12em;color:var(--muted);margin-bottom:3px;">MATCH ENDED</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);" id="ended-winner-label"></div>
+        <div style="font-size:11px;color:var(--sub);" id="ended-score-label"></div>
+      </div>
+      <button onclick="initSetup()" style="background:var(--s4);border:1px solid var(--border-strong);border-radius:10px;color:var(--text);font-size:12px;font-weight:700;padding:10px 14px;cursor:pointer;font-family:inherit;white-space:nowrap;">New Match</button>
+    </div>
     <div class="score-area">
       <div class="score-card score-card-p1" onclick="awardPoint(0)" id="card-p1">
         <div class="sc-serving" id="dot0" style="display:none;"></div>
@@ -434,12 +443,9 @@ html, body {
     <div class="end-score" id="end-score"></div>
     <div class="end-actions">
       <button class="ctrl-btn" onclick="exportCSV()">Export CSV</button>
-      <button class="btn-primary" style="flex:2;margin-top:0;" onclick="initSetup()">New Match</button>
+      <button class="btn-primary" style="flex:2;margin-top:0;" onclick="browseCompletedMatch()">Browse Stats →</button>
     </div>
-  </div>
-  <div class="end-log-section">
-    <div class="log-section-label">Full Point Log</div>
-    <div class="log-scroll" id="log2"></div>
+    <button onclick="initSetup()" style="margin-top:12px;background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">New Match</button>
   </div>
 </div>
 
@@ -506,8 +512,7 @@ function listenToMatch() {
     HIST = [];
     setUndoState(false);
     if (M.done) {
-      var sw = [0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
-      finishMatch(sw[0]>=M.setsNeeded?0:1);
+      browseCompletedMatch();
     } else { render(); renderLog(); renderStats(); flashMsg('Synced'); }
   }, function(e) { console.warn('Listen error', e); });
 }
@@ -531,17 +536,16 @@ function joinMatch() {
     M = JSON.parse(doc.data().stateJson);
     if (!M.pointLog) M.pointLog = [];
     HIST = [];
-    setMatchInUrl(id); showMatchChip(id); listenToMatch();
+    setMatchInUrl(id); showMatchChip(id);
     if (M.done) {
-      var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
-      finishMatch(sw[0]>=M.setsNeeded?0:1);
-    } else { showMatch(); }
+      browseCompletedMatch();
+    } else { listenToMatch(); showMatch(); }
   }).catch(function() { alert('Error loading match.'); });
 }
 
 // ── Core state ──
 var M = null, HIST = [], PTS = ['0','15','30','40'], SAVE_KEY = 'court_tracker_v2';
-var firstServer = 0, _serveType = '1st', _statsPlayer = 0;
+var firstServer = 0, _serveType = '1st', _statsPlayer = 0, _readOnly = false;
 
 function pickServe(idx) {
   firstServer = idx;
@@ -593,12 +597,34 @@ function showMatch() {
   document.getElementById('s-match').style.display = 'flex';
   document.getElementById('s-match').style.flexDirection = 'column';
   document.getElementById('s-end').style.display = 'none';
-  setUndoState(HIST.length > 0);
-  switchTab('score');
+  // Read-only mode: disable scoring UI
+  var ro = _readOnly;
+  document.getElementById('ended-banner').style.display = ro ? 'flex' : 'none';
+  document.querySelectorAll('.score-card').forEach(function(c) { c.style.pointerEvents = ro ? 'none' : ''; c.style.cursor = ro ? 'default' : ''; });
+  document.getElementById('serve-seg-wrap').style.display = ro ? 'none' : '';
+  document.getElementById('stats-preview').style.display = ro ? 'none' : 'none'; // re-shown by render()
+  document.querySelector('.action-cards').style.display = ro ? 'none' : '';
+  // Live chip vs ended
+  var chip = document.getElementById('match-chip');
+  var dot = chip ? chip.querySelector('.live-dot') : null;
+  if (dot) dot.style.background = ro ? 'var(--opp)' : 'var(--you)';
+  if (!ro) setUndoState(HIST.length > 0);
+  switchTab(ro ? 'stats' : 'score');
   render(); renderLog(); renderStats();
 }
+function browseCompletedMatch() {
+  if (!M) return;
+  _readOnly = true;
+  // Populate ended banner
+  var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+  var w = sw[0]>=sw[1]?0:1;
+  var sets = M.completedSets.map(function(s){return s[0]+'-'+s[1];}).join('  ');
+  document.getElementById('ended-winner-label').textContent = M.names[w] + ' won';
+  document.getElementById('ended-score-label').textContent = sets;
+  showMatch();
+}
 function initSetup() {
-  M = null; HIST = [];
+  M = null; HIST = []; _readOnly = false;
   if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
   MATCH_ID = null;
   history.replaceState(null,'',window.location.pathname);
@@ -744,14 +770,6 @@ function finishMatch(w) {
   var sets=M.completedSets.map(function(s){return s[0]+'-'+s[1];}).join('  ');
   document.getElementById('end-winner').textContent = M.names[w]+' wins';
   document.getElementById('end-score').textContent = sets;
-  // populate end log
-  var log2 = document.getElementById('log2'); log2.innerHTML = '';
-  (M.pointLog||[]).slice().reverse().forEach(function(e) {
-    var d = document.createElement('div'); d.className='log-entry';
-    var tag = e.serve ? '<br><span class="log-tags">'+esc(e.serve)+' serve</span>' : '';
-    d.innerHTML = '<span class="log-winner p'+(e.winnerIdx||0)+'">'+esc(e.winner)+'</span><span class="log-ctx">'+esc(e.ctx)+'<br>'+esc(e.score)+tag+'</span>';
-    log2.appendChild(d);
-  });
   document.getElementById('s-match').style.display = 'none';
   document.getElementById('s-end').style.display = 'flex';
   document.getElementById('s-end').style.flexDirection = 'column';
@@ -1206,11 +1224,10 @@ window.addEventListener('load', function() {
         M = JSON.parse(doc.data().stateJson);
         if (!M.pointLog) M.pointLog=[];
         HIST=[];
-        showMatchChip(urlId); listenToMatch();
+        showMatchChip(urlId);
         if (M.done) {
-          var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
-          finishMatch(sw[0]>=M.setsNeeded?0:1);
-        } else { showMatch(); }
+          browseCompletedMatch();
+        } else { listenToMatch(); showMatch(); }
       }
     }).catch(function(e){ console.warn('Load error',e); });
     return;
