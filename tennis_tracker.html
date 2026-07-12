@@ -710,7 +710,7 @@ function showMatch() {
   var dot = chip ? chip.querySelector('.live-dot') : null;
   if (dot) dot.style.background = ro ? 'var(--opp)' : 'var(--you)';
   if (!ro) setUndoState(HIST.length > 0);
-  switchTab(ro ? 'stats' : 'score');
+  switchTab('score');
   render(); renderLog(); renderStats();
 }
 function browseCompletedMatch() {
