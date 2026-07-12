@@ -930,35 +930,116 @@ function finishMatch(w) {
 
 function generatePlayerSummary(playerIdx) {
   var st = computeStats(playerIdx);
+  var stOpp = computeStats(1-playerIdx);
   var name = M.names[playerIdx];
   var oppName = M.names[1-playerIdx];
-  var lines = [];
+  var pct = Math.round(st.ptsWonPct);
+  var oppPct = Math.round(stOpp.ptsWonPct);
+
+  // Seeded pick so the same match always generates the same summary
+  var seed = (M.pointLog||[]).length * (playerIdx+1);
+  function pick(arr) { return arr[seed++ % arr.length]; }
+
+  // Determine match outcome for this player
+  var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+  var won = sw[playerIdx] > sw[1-playerIdx];
+  var setCount = M.completedSets.length;
+  var setStr = M.completedSets.map(function(s){return s[playerIdx]+'-'+s[1-playerIdx];}).join(', ');
+  var tight = M.completedSets.some(function(s){ return Math.abs(s[0]-s[1])<=2 && Math.max(s[0],s[1])>=6; });
+
+  var sentences = [];
+
+  // ── Opening: match context + overall points ──
   if (!isNaN(st.ptsWonPct)) {
-    if (st.ptsWonPct >= 60) lines.push(name+' dominated the scoreboard, winning '+Math.round(st.ptsWonPct)+'% of all points played.');
-    else if (st.ptsWonPct >= 50) lines.push(name+' edged the point count at '+Math.round(st.ptsWonPct)+'%, converting opportunities just when it mattered.');
-    else lines.push(name+' won '+Math.round(st.ptsWonPct)+'% of points, facing consistent pressure from '+oppName+' throughout the match.');
+    if (won && st.ptsWonPct >= 60) sentences.push(pick([
+      name+' was the clear aggressor today, winning '+pct+'% of all points and leaving '+oppName+' with little room to breathe across '+setCount+' sets ('+setStr+').',
+      'A dominant display from '+name+' — '+pct+'% of points won tells the story of a player who controlled the match from the first game.',
+      name+' dictated terms throughout, pocketing nearly '+pick(['two in three',''+pct+'%'])+' of all points played and never letting '+oppName+' settle.'
+    ]));
+    else if (won && st.ptsWonPct >= 50) sentences.push(pick([
+      name+' edged the point count at '+pct+'% — not dominant on paper, but clinical when the moments mattered most.',
+      'It wasn\'t always comfortable, but '+name+' found a way to win '+pct+'% of points and convert that into a '+setStr+' result.',
+      'Efficiency over dominance: '+name+' won '+pct+'% of points, doing just enough to come out ahead against '+oppName+'.'
+    ]));
+    else if (!won && st.ptsWonPct >= 45) sentences.push(pick([
+      name+' was competitive throughout — '+pct+'% of points won against '+oppPct+'% for '+oppName+' shows how fine the margins were.',
+      'The scoreline didn\'t fully reflect '+name+'\'s effort; at '+pct+'% of points won this was a tight contest that could have gone either way.',
+      'A closely-fought match where '+name+' won '+pct+'% of points but couldn\'t quite convert that into sets.'
+    ]));
+    else sentences.push(pick([
+      oppName+' dominated the point count '+oppPct+'–'+pct+'%, and '+name+' rarely found a route back into the rallies.',
+      'With only '+pct+'% of points won, '+name+' was under consistent pressure — '+oppName+' won nearly '+pick(['every other',''+oppPct+'%'])+' point from start to finish.',
+      name+' struggled to impose on the match, winning just '+pct+'% of points as '+oppName+' controlled the tempo.'
+    ]));
   }
-  if (!isNaN(st.firstServeIn)) {
-    if (st.firstServeIn >= 70) lines.push('The serve was a weapon — a '+Math.round(st.firstServeIn)+'% first-serve percentage kept '+oppName+' off balance.');
-    else if (st.firstServeIn >= 55) lines.push('First serve landed '+Math.round(st.firstServeIn)+'% of the time, providing a reasonable platform.');
-    else lines.push('A '+Math.round(st.firstServeIn)+'% first-serve rate meant '+name+' frequently relied on the second delivery.');
+
+  // ── Serve ──
+  if (!isNaN(st.firstServeIn) && !isNaN(st.firstServeWinPct)) {
+    var s1 = Math.round(st.firstServeIn), s1w = Math.round(st.firstServeWinPct);
+    if (st.firstServeIn >= 68 && st.firstServeWinPct >= 72) sentences.push(pick([
+      'The serve was the foundation — landing '+s1+'% of first deliveries and winning '+s1w+'% of those points, '+name+' made the opening shot count every time.',
+      'A '+s1+'% first-serve percentage combined with a '+s1w+'% win rate on those points meant '+oppName+' was constantly on the back foot from the start of each rally.',
+      name+'\'s serve was a genuine weapon today: '+s1+'% in, '+s1w+'% won — numbers that left '+oppName+' with almost no free looks on return.'
+    ]));
+    else if (st.firstServeIn >= 55 && st.firstServeWinPct >= 58) sentences.push(pick([
+      'First serve held up well — '+s1+'% in and winning '+s1w+'% when it landed gave '+name+' a reliable platform.',
+      'With '+s1+'% of first serves finding the box and converting at '+s1w+'%, the serve was a steady rather than spectacular weapon.',
+      name+' kept the serve ticking over at '+s1+'% in and '+s1w+'% won — enough to hold comfortably through most games.'
+    ]));
+    else sentences.push(pick([
+      'The serve was a challenge: a '+s1+'% first-serve rate forced '+name+' onto the second ball too often, and '+oppName+' took full advantage.',
+      'At '+s1+'% first serves in and only '+s1w+'% won on those, '+name+' spent much of the match defending rather than dictating.',
+      name+' couldn\'t find a consistent first serve — just '+s1+'% in — which let '+oppName+' attack the second delivery repeatedly.'
+    ]));
+  } else if (!isNaN(st.firstServeIn)) {
+    var s1 = Math.round(st.firstServeIn);
+    if (st.firstServeIn >= 65) sentences.push('The first serve landed '+s1+'% of the time, giving '+name+' a solid base to work from.');
+    else sentences.push('A '+s1+'% first-serve rate created unnecessary pressure on '+name+'\'s own service games.');
   }
-  if (!isNaN(st.firstServeWinPct)) {
-    if (st.firstServeWinPct >= 75) lines.push('When the first serve landed, '+name+' was nearly unbeatable, winning '+Math.round(st.firstServeWinPct)+'% of those points.');
-    else if (st.firstServeWinPct >= 60) lines.push('First-serve points were solid at '+Math.round(st.firstServeWinPct)+'%.');
-    else lines.push('Even on first serve, '+name+' won just '+Math.round(st.firstServeWinPct)+'% of points — a sign of pressure from the returner.');
+
+  // ── Double faults ──
+  if (st.doubleFaults >= 4) sentences.push(pick([
+    st.doubleFaults+' double faults were an avoidable gift to '+oppName+' — on a tight scoreline those points are the difference between sets.',
+    'The '+st.doubleFaults+' double faults stand out as the one area '+name+' will want to clean up; free points handed to the opposition at key moments.',
+    'Serving double-faulted '+st.doubleFaults+' times was costly — those are points '+oppName+' didn\'t have to earn.'
+  ]));
+  else if (st.doubleFaults > 0) sentences.push(pick([
+    st.doubleFaults+' double fault'+(st.doubleFaults>1?'s':'')+' snuck in but didn\'t significantly derail the serve overall.',
+    'Just '+st.doubleFaults+' double fault'+(st.doubleFaults>1?'s':'')+' — a minor blip in an otherwise controlled service performance.'
+  ]));
+
+  // ── Return ──
+  if (!isNaN(st.returnWonPct) && !isNaN(stOpp.firstServeIn)) {
+    var rw = Math.round(st.returnWonPct), oppS1 = Math.round(stOpp.firstServeIn);
+    if (st.returnWonPct >= 45) sentences.push(pick([
+      'On return, '+name+' was a constant threat — winning '+rw+'% of return points and regularly making '+oppName+' fight to hold serve.',
+      'The return game was arguably '+name+'\'s biggest strength today: '+rw+'% of return points won, piling pressure on the '+oppName+' service games.',
+      name+' converted '+rw+'% of return points, which — against '+oppName+'\'s '+oppS1+'% first-serve percentage — amounts to a serious return game.'
+    ]));
+    else if (st.returnWonPct >= 30) sentences.push(pick([
+      'Return was competitive at '+rw+'% — not dominant, but enough to make '+oppName+' work for every hold.',
+      name+' won '+rw+'% of return points, keeping the pressure on without ever fully breaking '+oppName+'\'s serve rhythm.',
+      'A '+rw+'% return rate meant '+name+' was in the rallies, even if outright break opportunities were limited.'
+    ]));
+    else sentences.push(pick([
+      oppName+' held serve comfortably; with just '+rw+'% of return points won, '+name+' rarely troubled the service games.',
+      'The return game was the weak link — '+rw+'% won gave '+oppName+' an easy ride on serve throughout the match.',
+      name+' will look to improve on a '+rw+'% return rate; '+oppName+' served well and faced very little pressure on their own delivery.'
+    ]));
   }
-  if (st.doubleFaults > 0) {
-    if (st.doubleFaults >= 4) lines.push(st.doubleFaults+' double faults were a costly liability, gifting '+oppName+' valuable points.');
-    else lines.push(st.doubleFaults+' double fault'+(st.doubleFaults>1?'s':'')+' crept into the game but remained manageable.');
-  }
-  if (!isNaN(st.returnWonPct)) {
-    if (st.returnWonPct >= 45) lines.push('On return, '+name+' was aggressive — winning '+Math.round(st.returnWonPct)+'% of points and consistently threatening the '+oppName+' serve.');
-    else if (st.returnWonPct >= 30) lines.push('Return games were competitive, with '+name+' converting '+Math.round(st.returnWonPct)+'% of return points.');
-    else lines.push('The return game struggled at '+Math.round(st.returnWonPct)+'%, with '+oppName+' holding serve comfortably.');
-  }
-  if (!lines.length) lines.push(name+' competed throughout the match.');
-  return lines.join(' ');
+
+  // ── Closing observation if tight match ──
+  if (tight && won) sentences.push(pick([
+    'The sets were close, but '+name+' found the big points when it counted.',
+    'It was tight all the way — '+name+' deserves credit for maintaining focus through the pressure moments.'
+  ]));
+  else if (tight && !won) sentences.push(pick([
+    'The margins were razor-thin; on another day the result could easily have gone the other way.',
+    'This was a match of fine margins, and '+name+' will take confidence from how close it was.'
+  ]));
+
+  if (!sentences.length) sentences.push(name+' competed throughout the match.');
+  return sentences.join(' ');
 }
 
 function generateReport() {
