@@ -241,6 +241,74 @@ html, body {
 .sb-cell.win { font-size: 13px; }
 .stats-placeholder { text-align: center; padding: 48px 0; color: var(--muted); font-size: 13px; font-weight: 500; }
 
+/* ── ARCHIVE SCREEN ── */
+#s-archive { flex: 1; display: none; flex-direction: column; overflow-y: auto; }
+.archive-header { display: flex; align-items: center; gap: 12px; padding: 20px 16px 12px; border-bottom: 1px solid var(--border); }
+.archive-back { background: var(--s2); border: 1px solid var(--border-strong); border-radius: 10px; color: var(--text); font-size: 13px; font-weight: 700; padding: 8px 14px; cursor: pointer; font-family: inherit; }
+.archive-title { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+.archive-list { padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+.archive-card { background: var(--s2); border-radius: 14px; border: 1px solid var(--border); padding: 14px 16px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: border-color 0.15s; }
+.archive-card:active { border-color: var(--you); }
+.archive-card-left { min-width: 0; }
+.archive-card-names { font-size: 14px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.archive-card-meta { font-size: 11px; color: var(--sub); margin-top: 3px; }
+.archive-card-result { text-align: right; flex-shrink: 0; }
+.archive-card-sets { font-size: 13px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.archive-card-winner { font-size: 10px; font-weight: 700; color: var(--you); margin-top: 2px; }
+.archive-card-winner.p2 { color: var(--opp); }
+.archive-empty { text-align: center; padding: 60px 0; color: var(--muted); font-size: 13px; font-weight: 500; }
+.archive-chip { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--muted); }
+
+/* ── PRINT / PDF REPORT ── */
+#print-container { display: none; }
+@media print {
+  body > * { display: none !important; }
+  #print-container { display: block !important; font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; background: #fff; padding: 0; margin: 0; }
+  .pr-page { max-width: 720px; margin: 0 auto; padding: 32px 40px; }
+  .pr-header { border-bottom: 3px solid #111; padding-bottom: 16px; margin-bottom: 24px; }
+  .pr-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #666; margin-bottom: 6px; }
+  .pr-title { font-size: 28px; font-weight: 900; letter-spacing: -0.03em; margin-bottom: 4px; }
+  .pr-subtitle { font-size: 14px; color: #666; }
+  .pr-section { margin-bottom: 28px; }
+  .pr-section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #666; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 14px; }
+  .pr-summary-box { background: #f7f7f7; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .pr-summary-player { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .pr-summary-p1 { color: #0a7a47; }
+  .pr-summary-p2 { color: #c2410c; }
+  .pr-summary-text { font-size: 13px; line-height: 1.7; color: #333; }
+  .pr-stats-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .pr-stats-table th { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #666; padding: 8px 10px; border-bottom: 2px solid #ddd; text-align: center; }
+  .pr-stats-table th:first-child { text-align: left; }
+  .pr-stats-table td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: center; font-variant-numeric: tabular-nums; }
+  .pr-stats-table td:first-child { text-align: left; color: #666; }
+  .pr-stats-table .p1v { color: #0a7a47; font-weight: 700; }
+  .pr-stats-table .p2v { color: #c2410c; font-weight: 700; }
+  .pr-log-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .pr-log-table th { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #666; padding: 6px 8px; border-bottom: 2px solid #ddd; text-align: left; }
+  .pr-log-table td { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; }
+  .pr-log-table tr:nth-child(even) td { background: #fafafa; }
+  .pr-log-p1 { color: #0a7a47; font-weight: 600; }
+  .pr-log-p2 { color: #c2410c; font-weight: 600; }
+  .pr-sets-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+  .pr-set-box { background: #f7f7f7; border-radius: 8px; padding: 12px 16px; text-align: center; min-width: 80px; }
+  .pr-set-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #999; margin-bottom: 4px; }
+  .pr-set-score { font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; }
+  .pr-footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 10px; color: #aaa; text-align: center; }
+  .pr-meta { font-size: 11px; color: #999; margin-top: 4px; }
+  .pr-result { font-size: 16px; margin-bottom: 24px; }
+  .pr-result-winner { font-weight: 900; }
+  .pr-result-score { color: #555; font-variant-numeric: tabular-nums; }
+  .pr-summary-name { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .pr-summary-p1 .pr-summary-name { color: #0a7a47; }
+  .pr-summary-p2 .pr-summary-name { color: #c2410c; }
+  .pr-summary-box p { font-size: 13px; line-height: 1.7; color: #333; }
+  .pr-set-cell { background: #f7f7f7; border-radius: 8px; padding: 12px 16px; text-align: center; min-width: 80px; }
+  .pr-set-num { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #999; margin-bottom: 4px; }
+  .pr-set-winner { font-size: 11px; font-weight: 700; margin-top: 4px; }
+  .pr-set-winner.p1 { color: #0a7a47; }
+  .pr-set-winner.p2 { color: #c2410c; }
+}
+
 /* ── END SCREEN ── */
 #s-end { flex: 1; display: none; flex-direction: column; overflow-y: auto; }
 .end-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 2rem; text-align: center; background: var(--s2); }
@@ -311,6 +379,7 @@ html, body {
     </div>
   </div>
   <button class="btn-primary" onclick="startMatch()">Start Match</button>
+  <button onclick="showArchive()" style="width:100%;margin-top:10px;background:var(--s2);border:1px solid var(--border-strong);border-radius:var(--radius);color:var(--sub);font-size:13px;font-weight:700;letter-spacing:0.04em;padding:14px;cursor:pointer;font-family:inherit;">Recent Matches</button>
   <div style="display:flex;align-items:center;gap:10px;margin-top:1.25rem;">
     <div style="flex:1;height:1px;background:var(--border);"></div>
     <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">or join existing</span>
@@ -435,6 +504,15 @@ html, body {
   </div>
 </div>
 
+<!-- ── ARCHIVE ── -->
+<div id="s-archive">
+  <div class="archive-header">
+    <button class="archive-back" onclick="initSetup()">← Back</button>
+    <div class="archive-title">Recent Matches</div>
+  </div>
+  <div class="archive-list" id="archive-list"></div>
+</div>
+
 <!-- ── END ── -->
 <div id="s-end">
   <div class="end-hero">
@@ -442,12 +520,18 @@ html, body {
     <div class="end-winner" id="end-winner"></div>
     <div class="end-score" id="end-score"></div>
     <div class="end-actions">
-      <button class="ctrl-btn" onclick="exportCSV()">Export CSV</button>
+      <button class="ctrl-btn" onclick="generateReport()">PDF Report</button>
       <button class="btn-primary" style="flex:2;margin-top:0;" onclick="browseCompletedMatch()">Browse Stats →</button>
     </div>
-    <button onclick="initSetup()" style="margin-top:12px;background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">New Match</button>
+    <div style="display:flex;gap:10px;margin-top:10px;width:100%;">
+      <button class="ctrl-btn" onclick="exportCSV()">Export CSV</button>
+      <button onclick="initSetup()" style="flex:1;background:none;border:1px solid var(--border-strong);border-radius:var(--radius-sm);color:var(--muted);font-size:12px;font-weight:700;padding:10px 4px;cursor:pointer;font-family:inherit;">New Match</button>
+    </div>
   </div>
 </div>
+
+<!-- ── PRINT CONTAINER ── -->
+<div id="print-container"></div>
 
 <!-- Confirm overlay -->
 <div class="confirm-overlay" id="confirm-overlay">
@@ -631,10 +715,68 @@ function initSetup() {
   document.getElementById('s-setup').style.display = 'flex';
   document.getElementById('s-match').style.display = 'none';
   document.getElementById('s-end').style.display = 'none';
+  document.getElementById('s-archive').style.display = 'none';
   document.getElementById('match-chip').style.display = 'none';
   document.getElementById('match-chip-placeholder').style.display = 'flex';
   document.getElementById('inp-join').value = '';
   checkResume();
+}
+
+// ── Archive ──
+var ARCHIVE_KEY = 'court_tracker_archive';
+function loadArchive() { try { return JSON.parse(localStorage.getItem(ARCHIVE_KEY)) || []; } catch(e) { return []; } }
+function saveToArchive() {
+  if (!MATCH_ID || !M) return;
+  var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+  var winner = sw[0]>sw[1]?0:1;
+  var archive = loadArchive();
+  archive = archive.filter(function(e){ return e.id !== MATCH_ID; });
+  archive.unshift({ id:MATCH_ID, names:M.names, date:new Date().toISOString(), completedSets:M.completedSets, winner:winner, totalSets:M.totalSets });
+  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive.slice(0,100)));
+}
+function showArchive() {
+  document.getElementById('s-setup').style.display = 'none';
+  document.getElementById('s-end').style.display = 'none';
+  document.getElementById('s-match').style.display = 'none';
+  document.getElementById('s-archive').style.display = 'flex';
+  document.getElementById('s-archive').style.flexDirection = 'column';
+  var list = document.getElementById('archive-list');
+  var archive = loadArchive();
+  if (!archive.length) { list.innerHTML = '<div class="archive-empty">No matches recorded yet.<br>Play a match to see it here.</div>'; return; }
+  list.innerHTML = '';
+  archive.forEach(function(entry) {
+    var sets = (entry.completedSets||[]).map(function(s){return s[0]+'-'+s[1];}).join('  ');
+    var d = new Date(entry.date);
+    var dateStr = d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    var winnerName = entry.names[entry.winner];
+    var card = document.createElement('div');
+    card.className = 'archive-card';
+    card.innerHTML =
+      '<div class="archive-card-left">'+
+        '<div class="archive-card-names">'+esc(entry.names[0])+' vs '+esc(entry.names[1])+'</div>'+
+        '<div class="archive-card-meta">'+dateStr+' · <span class="archive-chip">'+esc(entry.id)+'</span></div>'+
+      '</div>'+
+      '<div class="archive-card-result">'+
+        '<div class="archive-card-sets">'+esc(sets||'—')+'</div>'+
+        '<div class="archive-card-winner '+(entry.winner===1?'p2':'')+'">'+esc(winnerName)+' won</div>'+
+      '</div>';
+    card.onclick = (function(id){ return function(){ loadArchiveMatch(id); }; })(entry.id);
+    list.appendChild(card);
+  });
+}
+function loadArchiveMatch(id) {
+  MATCH_ID = id;
+  db.collection('matches').doc(id).get().then(function(doc) {
+    if (!doc.exists || !doc.data().stateJson) {
+      alert('Match data expired or not found. Firestore keeps matches for 7 days.');
+      return;
+    }
+    M = JSON.parse(doc.data().stateJson);
+    if (!M.pointLog) M.pointLog = [];
+    HIST = [];
+    setMatchInUrl(id); showMatchChip(id);
+    browseCompletedMatch();
+  }).catch(function(){ alert('Error loading match.'); });
 }
 
 // ── Tab switching ──
@@ -767,12 +909,121 @@ function winSet(w) {
 }
 function finishMatch(w) {
   save();
+  saveToArchive();
   var sets=M.completedSets.map(function(s){return s[0]+'-'+s[1];}).join('  ');
   document.getElementById('end-winner').textContent = M.names[w]+' wins';
   document.getElementById('end-score').textContent = sets;
   document.getElementById('s-match').style.display = 'none';
   document.getElementById('s-end').style.display = 'flex';
   document.getElementById('s-end').style.flexDirection = 'column';
+}
+
+function generatePlayerSummary(playerIdx) {
+  var st = computeStats(playerIdx);
+  var name = M.names[playerIdx];
+  var oppName = M.names[1-playerIdx];
+  var lines = [];
+  if (!isNaN(st.ptsWonPct)) {
+    if (st.ptsWonPct >= 60) lines.push(name+' dominated the scoreboard, winning '+Math.round(st.ptsWonPct)+'% of all points played.');
+    else if (st.ptsWonPct >= 50) lines.push(name+' edged the point count at '+Math.round(st.ptsWonPct)+'%, converting opportunities just when it mattered.');
+    else lines.push(name+' won '+Math.round(st.ptsWonPct)+'% of points, facing consistent pressure from '+oppName+' throughout the match.');
+  }
+  if (!isNaN(st.firstServeIn)) {
+    if (st.firstServeIn >= 70) lines.push('The serve was a weapon — a '+Math.round(st.firstServeIn)+'% first-serve percentage kept '+oppName+' off balance.');
+    else if (st.firstServeIn >= 55) lines.push('First serve landed '+Math.round(st.firstServeIn)+'% of the time, providing a reasonable platform.');
+    else lines.push('A '+Math.round(st.firstServeIn)+'% first-serve rate meant '+name+' frequently relied on the second delivery.');
+  }
+  if (!isNaN(st.firstServeWinPct)) {
+    if (st.firstServeWinPct >= 75) lines.push('When the first serve landed, '+name+' was nearly unbeatable, winning '+Math.round(st.firstServeWinPct)+'% of those points.');
+    else if (st.firstServeWinPct >= 60) lines.push('First-serve points were solid at '+Math.round(st.firstServeWinPct)+'%.');
+    else lines.push('Even on first serve, '+name+' won just '+Math.round(st.firstServeWinPct)+'% of points — a sign of pressure from the returner.');
+  }
+  if (st.doubleFaults > 0) {
+    if (st.doubleFaults >= 4) lines.push(st.doubleFaults+' double faults were a costly liability, gifting '+oppName+' valuable points.');
+    else lines.push(st.doubleFaults+' double fault'+(st.doubleFaults>1?'s':'')+' crept into the game but remained manageable.');
+  }
+  if (!isNaN(st.returnWonPct)) {
+    if (st.returnWonPct >= 45) lines.push('On return, '+name+' was aggressive — winning '+Math.round(st.returnWonPct)+'% of points and consistently threatening the '+oppName+' serve.');
+    else if (st.returnWonPct >= 30) lines.push('Return games were competitive, with '+name+' converting '+Math.round(st.returnWonPct)+'% of return points.');
+    else lines.push('The return game struggled at '+Math.round(st.returnWonPct)+'%, with '+oppName+' holding serve comfortably.');
+  }
+  if (!lines.length) lines.push(name+' competed throughout the match.');
+  return lines.join(' ');
+}
+
+function generateReport() {
+  if (!M) return;
+  var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+  var winner = sw[0]>=sw[1]?0:1;
+  var sets = M.completedSets.map(function(s){return s[0]+'-'+s[1];}).join('  ');
+  var st0 = computeStats(0), st1 = computeStats(1);
+  var pct = function(v){ return isNaN(v)?'—':Math.round(v)+'%'; };
+  var num = function(v){ return isNaN(v)||v===undefined?'—':v; };
+
+  // Point log grouped
+  var log = M.pointLog || [];
+  var logRows = log.map(function(e,i){
+    var m = (e.score||'').match(/(\S+)-(\S+)\s*\|/);
+    var pts = m?m[1]+' – '+m[2]:'';
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(e.server||'')+'</td><td>'+esc(e.serve||'')+'</td><td>'+esc(M.names[e.winnerIdx]||'')+'</td><td>'+esc(pts)+'</td></tr>';
+  }).join('');
+
+  // Set breakdown
+  var setGrid = M.completedSets.map(function(s,i){
+    var sw=s[0]>s[1]?0:1;
+    return '<div class="pr-set-cell"><div class="pr-set-num">Set '+(i+1)+'</div><div class="pr-set-score">'+s[0]+'–'+s[1]+'</div><div class="pr-set-winner '+(sw===1?'p2':'p1')+'">'+esc(M.names[sw])+' won</div></div>';
+  }).join('');
+
+  var d = new Date();
+  var dateStr = d.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  var html =
+    '<div class="pr-page">'+
+      '<div class="pr-header">'+
+        '<div class="pr-title">Match Report</div>'+
+        '<div class="pr-subtitle">'+esc(M.names[0])+' vs '+esc(M.names[1])+'</div>'+
+        '<div class="pr-meta">'+esc(dateStr)+' · Match ID: '+esc(MATCH_ID||'—')+'</div>'+
+      '</div>'+
+      '<div class="pr-result">'+
+        '<span class="pr-result-winner">'+esc(M.names[winner])+' wins</span>'+
+        ' <span class="pr-result-score">'+esc(sets)+'</span>'+
+      '</div>'+
+
+      '<div class="pr-section"><div class="pr-section-title">Player Summaries</div>'+
+        '<div class="pr-summary-box pr-summary-p1"><div class="pr-summary-name">'+esc(M.names[0])+'</div><p>'+generatePlayerSummary(0)+'</p></div>'+
+        '<div class="pr-summary-box pr-summary-p2"><div class="pr-summary-name">'+esc(M.names[1])+'</div><p>'+generatePlayerSummary(1)+'</p></div>'+
+      '</div>'+
+
+      '<div class="pr-section"><div class="pr-section-title">Set Breakdown</div>'+
+        '<div class="pr-sets-grid">'+setGrid+'</div>'+
+      '</div>'+
+
+      '<div class="pr-section"><div class="pr-section-title">Statistics</div>'+
+        '<table class="pr-stats-table">'+
+          '<thead><tr><th>'+esc(M.names[0])+'</th><th>Stat</th><th>'+esc(M.names[1])+'</th></tr></thead>'+
+          '<tbody>'+
+            '<tr><td>'+pct(st0.ptsWonPct)+'</td><td>Points Won</td><td>'+pct(st1.ptsWonPct)+'</td></tr>'+
+            '<tr><td>'+pct(st0.firstServeIn)+'</td><td>1st Serve %</td><td>'+pct(st1.firstServeIn)+'</td></tr>'+
+            '<tr><td>'+pct(st0.firstServeWinPct)+'</td><td>1st Serve Win %</td><td>'+pct(st1.firstServeWinPct)+'</td></tr>'+
+            '<tr><td>'+pct(st0.secondServeWinPct)+'</td><td>2nd Serve Win %</td><td>'+pct(st1.secondServeWinPct)+'</td></tr>'+
+            '<tr><td>'+num(st0.doubleFaults)+'</td><td>Double Faults</td><td>'+num(st1.doubleFaults)+'</td></tr>'+
+            '<tr><td>'+pct(st0.returnWonPct)+'</td><td>Return Points Won</td><td>'+pct(st1.returnWonPct)+'</td></tr>'+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+
+      '<div class="pr-section"><div class="pr-section-title">Point Log</div>'+
+        '<table class="pr-log-table">'+
+          '<thead><tr><th>#</th><th>Server</th><th>Serve</th><th>Point Won By</th><th>Score</th></tr></thead>'+
+          '<tbody>'+logRows+'</tbody>'+
+        '</table>'+
+      '</div>'+
+
+      '<div class="pr-footer">Generated by Tennis Score Tracker · '+esc(dateStr)+'</div>'+
+    '</div>';
+
+  document.getElementById('print-container').innerHTML = html;
+  setTimeout(function(){ window.print(); }, 100);
 }
 function undo() {
   if (!HIST.length) return;

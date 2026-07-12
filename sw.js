@@ -1,4 +1,4 @@
-const CACHE = 'court-tracker-v4';
+const CACHE = 'court-tracker-v5';
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
