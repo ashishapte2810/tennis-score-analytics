@@ -1,4 +1,4 @@
-const CACHE = 'court-tracker-v7';
+const CACHE = 'court-tracker-v8';
 const HTML = './tennis_tracker.html';
 
 self.addEventListener('install', function(e) {
@@ -20,6 +20,18 @@ self.addEventListener('activate', function(e) {
 
 self.addEventListener('fetch', function(e) {
   var url = e.request.url;
+
+  // Never intercept Firebase Auth or Google OAuth URLs — they carry redirect tokens
+  // that must reach the network unchanged for signInWithRedirect to work.
+  if (
+    url.indexOf('/__/auth/') !== -1 ||
+    url.indexOf('firebaseapp.com') !== -1 ||
+    url.indexOf('accounts.google.com') !== -1 ||
+    url.indexOf('googleapis.com') !== -1
+  ) {
+    return;
+  }
+
   // Network-first for the HTML — always get the latest, fall back to cache
   if (url.indexOf('tennis_tracker.html') !== -1 || url === self.location.origin + '/tennis-score-analytics/') {
     e.respondWith(
@@ -33,6 +45,7 @@ self.addEventListener('fetch', function(e) {
     );
     return;
   }
+
   // Cache-first for everything else
   e.respondWith(
     caches.match(e.request).then(function(r) {

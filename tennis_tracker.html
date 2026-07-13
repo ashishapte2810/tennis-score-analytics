@@ -619,7 +619,16 @@ function signIn() {
   var provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithRedirect(provider).catch(function(e) { alert('Sign-in failed: ' + e.message); });
 }
-auth.getRedirectResult().catch(function(e) { console.warn('Redirect result error', e); });
+auth.getRedirectResult().then(function(result) {
+  if (result && result.user) {
+    console.log('Redirect sign-in success:', result.user.email);
+  }
+}).catch(function(e) {
+  console.warn('Redirect result error', e);
+  if (e.code !== 'auth/popup-closed-by-user') {
+    alert('Sign-in failed: ' + (e.message || e.code));
+  }
+});
 function signOut() {
   auth.signOut();
 }
@@ -1807,7 +1816,7 @@ window.addEventListener('load', function() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js?v=7').then(function(reg) {
+    navigator.serviceWorker.register('./sw.js?v=8').then(function(reg) {
       // Auto-reload when a new SW takes over so fresh HTML is served immediately
       navigator.serviceWorker.addEventListener('controllerchange', function() {
         window.location.reload();
