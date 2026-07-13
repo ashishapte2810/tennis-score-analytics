@@ -362,6 +362,7 @@ html, body {
     Continue with Google
   </button>
   <div class="login-notice">Your match history is private and tied to your Google account.</div>
+  <div id="auth-error" style="display:none;margin-top:14px;padding:10px 14px;background:#3a1a1a;color:#f87171;border-radius:8px;font-size:13px;text-align:left;max-width:320px;word-break:break-word;"></div>
 </div>
 
 <!-- ── SETUP ── -->
@@ -615,19 +616,27 @@ var DEVICE_ID = Math.random().toString(36).slice(2, 10);
 var OWNER_ID = null;  // set from user.uid on sign-in
 var MATCH_ID = null, _unsubscribe = null;
 
+function showAuthError(msg) {
+  var el = document.getElementById('auth-error');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
 function signIn() {
   var provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithRedirect(provider).catch(function(e) { alert('Sign-in failed: ' + e.message); });
+  // Always show account picker so the redirect is visible to the user
+  provider.setCustomParameters({ prompt: 'select_account' });
+  auth.signInWithRedirect(provider).catch(function(e) {
+    showAuthError('Sign-in failed: ' + (e.message || e.code));
+  });
 }
 auth.getRedirectResult().then(function(result) {
   if (result && result.user) {
     console.log('Redirect sign-in success:', result.user.email);
+  } else {
+    console.log('getRedirectResult: no pending result');
   }
 }).catch(function(e) {
   console.warn('Redirect result error:', e.code, e.message);
-  if (e.code && e.code !== 'auth/popup-closed-by-user') {
-    alert('Sign-in error: ' + (e.message || e.code));
-  }
+  showAuthError('Auth error (' + e.code + '): ' + e.message);
 });
 function signOut() {
   auth.signOut();
