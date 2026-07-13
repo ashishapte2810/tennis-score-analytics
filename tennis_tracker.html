@@ -616,7 +616,8 @@ function listenToMatch() {
     HIST = [];
     setUndoState(false);
     if (M.done) {
-      browseCompletedMatch();
+      var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+      finishMatch(sw[0]>=sw[1]?0:1);
     } else { render(); renderLog(); renderStats(); flashMsg('Synced'); }
   }, function(e) { console.warn('Listen error', e); });
 }
