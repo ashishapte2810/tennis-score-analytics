@@ -639,6 +639,15 @@ auth.onAuthStateChanged(function(user) {
     updateUserBar(user);
     document.getElementById('s-login').style.display = 'none';
     document.getElementById('s-setup').style.display = 'flex';
+    // Always listen for active match so phone catches watch-scored completions
+    db.collection('users').doc(user.uid).onSnapshot(function(doc) {
+      if (!doc.exists) return;
+      var activeMatchId = doc.data().activeMatchId;
+      if (activeMatchId && MATCH_ID !== activeMatchId) {
+        MATCH_ID = activeMatchId;
+        listenToMatch();
+      }
+    });
     checkResume();
   } else {
     OWNER_ID = null;
@@ -878,10 +887,23 @@ function renderArchiveList() {
   var archive = loadArchive();
   if (!archive.length) { list.innerHTML = '<div class="archive-empty">No matches recorded yet.<br>Play a match to see it here.</div>'; return; }
   list.innerHTML = '';
+  // Group by month
+  var grouped = {}, groupOrder = [];
   archive.forEach(function(entry) {
+    var key = new Date(entry.date).toLocaleDateString('en-US', {month:'long', year:'numeric'});
+    if (!grouped[key]) { grouped[key] = []; groupOrder.push(key); }
+    grouped[key].push(entry);
+  });
+  groupOrder.forEach(function(month) {
+    // Month header
+    var header = document.createElement('div');
+    header.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);padding:8px 2px 4px;margin-top:4px;';
+    header.textContent = month;
+    list.appendChild(header);
+    grouped[month].forEach(function(entry) {
     var sets = (entry.completedSets||[]).map(function(s){return s[0]+'-'+s[1];}).join('  ');
     var d = new Date(entry.date);
-    var dateStr = d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    var dateStr = d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
     var winnerName = entry.names[entry.winner];
     var card = document.createElement('div');
     card.className = 'archive-card';
@@ -896,7 +918,8 @@ function renderArchiveList() {
       '</div>';
     card.onclick = (function(id){ return function(){ loadArchiveMatch(id); }; })(entry.id);
     list.appendChild(card);
-  });
+    }); // end grouped[month].forEach
+  }); // end groupOrder.forEach
 }
 function showArchive() {
   document.getElementById('s-setup').style.display = 'none';
@@ -1639,7 +1662,7 @@ function renderStats() {
   // Momentum: last 20 points colored dots
   var recent = (M.pointLog||[]).slice(-20);
   var momDots = recent.map(function(e){
-    var c = e.winnerIdx===p ? 'var(--you)' : 'var(--opp)';
+    var c = e.winnerIdx===p ? arcColor : 'var(--s4)';
     return '<div class="mom-dot" style="background:'+c+'"></div>';
   }).join('');
   // Arc: points won pct
@@ -1647,7 +1670,7 @@ function renderStats() {
   var arcColor = p===0?'var(--you)':'var(--opp)';
   var totalArc = 264;
   var arcOffset = totalArc - (arcPct/100)*totalArc;
-  var arcTextColor = arcPct>=50?'var(--you)':'var(--opp)';
+  var arcTextColor = arcColor;
 
   // Set breakdown
   var setRowsHtml = '';
