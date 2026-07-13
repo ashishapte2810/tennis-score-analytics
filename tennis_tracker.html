@@ -617,8 +617,9 @@ var MATCH_ID = null, _unsubscribe = null;
 
 function signIn() {
   var provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(function(e) { alert('Sign-in failed: ' + e.message); });
+  auth.signInWithRedirect(provider).catch(function(e) { alert('Sign-in failed: ' + e.message); });
 }
+auth.getRedirectResult().catch(function(e) { console.warn('Redirect result error', e); });
 function signOut() {
   auth.signOut();
 }
