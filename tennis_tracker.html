@@ -666,10 +666,21 @@ function syncToCloud() {
     db.collection('matches').doc(MATCH_ID).set({
       stateJson: JSON.stringify(M),
       updatedBy: DEVICE_ID,
+      ownerId: OWNER_ID,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     }).catch(function(e) { console.warn('Sync error', e); });
   } catch(e) { console.warn('Sync error', e); }
+}
+function setActiveMatch(matchId) {
+  if (!OWNER_ID) return;
+  db.collection('users').doc(OWNER_ID).set({ activeMatchId: matchId }, { merge: true })
+    .catch(function(e) { console.warn('Active match write error', e); });
+}
+function clearActiveMatch() {
+  if (!OWNER_ID) return;
+  db.collection('users').doc(OWNER_ID).set({ activeMatchId: null }, { merge: true })
+    .catch(function(e) { console.warn('Active match clear error', e); });
 }
 function listenToMatch() {
   if (_unsubscribe) _unsubscribe();
@@ -762,6 +773,7 @@ function startMatch() {
   HIST = []; clearSaved();
   MATCH_ID = generateMatchId();
   setMatchInUrl(MATCH_ID); showMatchChip(MATCH_ID); listenToMatch();
+  setActiveMatch(MATCH_ID);
   save(); showMatch();
 }
 function showMatch() {
@@ -1061,6 +1073,7 @@ function finishMatch(w) {
   save();
   saveToArchive();
   saveToFirestore();
+  clearActiveMatch();
   var sets=M.completedSets.map(function(s){return s[0]+'-'+s[1];}).join('  ');
   document.getElementById('end-winner').textContent = M.names[w]+' wins';
   document.getElementById('end-score').textContent = sets;
