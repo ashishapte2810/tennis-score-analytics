@@ -1,4 +1,4 @@
-const CACHE = 'court-tracker-v9';
+const CACHE = 'court-tracker-v10';
 const HTML = './tennis_tracker.html';
 
 self.addEventListener('install', function(e) {
