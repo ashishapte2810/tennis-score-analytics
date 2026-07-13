@@ -617,25 +617,17 @@ var MATCH_ID = null, _unsubscribe = null;
 
 function signIn() {
   var provider = new firebase.auth.GoogleAuthProvider();
-  // Popup is more reliable than redirect in standalone PWA mode.
-  // If the popup is blocked or closed, fall back to redirect.
-  auth.signInWithPopup(provider).catch(function(e) {
-    if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request') {
-      auth.signInWithRedirect(provider).catch(function(e2) {
-        alert('Sign-in failed: ' + e2.message);
-      });
-    } else if (e.code !== 'auth/popup-closed-by-user') {
-      alert('Sign-in failed: ' + (e.message || e.code));
-    }
-  });
+  auth.signInWithRedirect(provider).catch(function(e) { alert('Sign-in failed: ' + e.message); });
 }
-// Pick up any pending redirect result (fallback path above)
 auth.getRedirectResult().then(function(result) {
   if (result && result.user) {
     console.log('Redirect sign-in success:', result.user.email);
   }
 }).catch(function(e) {
   console.warn('Redirect result error:', e.code, e.message);
+  if (e.code && e.code !== 'auth/popup-closed-by-user') {
+    alert('Sign-in error: ' + (e.message || e.code));
+  }
 });
 function signOut() {
   auth.signOut();
