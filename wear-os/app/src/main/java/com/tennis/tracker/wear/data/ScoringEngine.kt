@@ -62,6 +62,8 @@ object ScoringEngine {
         val oppPts = state.pts[loser]
 
         if (myPts == 3 && oppPts == 3) {
+            // no-ad: decisive point at deuce — win the game immediately
+            if (state.noAd) return winGame(state, winner)
             val newPts = state.pts.toMutableList(); newPts[winner] = 4
             return state.copy(pts = newPts)
         }

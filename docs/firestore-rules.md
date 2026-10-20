@@ -1,38 +1,16 @@
 # Firestore Security Rules
 
-## Current state
+## Current state (post S17-8 fix)
 
-The current rules allow any authenticated user to read and write any document:
+The watch app's `saveState()` now includes `ownerId` in every write (fixed in
+`FirestoreRepository.kt`). The tight rules below are live in `firestore.rules`
+and should be deployed with:
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}
+```bash
+firebase deploy --only firestore:rules
 ```
 
-This means any signed-in user can read or modify any other user's matches. This is intentional for now (see **Why rules are loose** below).
-
-## Why rules are loose
-
-The intended rules would restrict writes to the match owner:
-
-```javascript
-match /matches/{matchId} {
-  allow write: if request.auth != null
-    && (resource == null || resource.data.ownerId == request.auth.uid);
-}
-```
-
-This rule was implemented but reverted because the watch app's `saveState()` function does not include `ownerId` in its Firestore write payload. When the watch writes a point, `ownerId` is set to `null` (or omitted), which causes the owner-check to fail on the next write from the phone.
-
-**Fix required (S17-8):** Add `ownerId` to the watch app's `saveState()` payload in `FirestoreRepository.kt`. Once that is deployed, the strict rules can be re-enabled.
-
-## Target rules (post S17-8)
+## Rules
 
 ```javascript
 rules_version = '2';
@@ -66,9 +44,6 @@ service cloud.firestore {
 ```
 
 ## Known issues
-
-### Watch ownerId omission (S8-2 / S17-8)
-The watch's `FirestoreRepository.saveState()` currently omits `ownerId` from its write payload. This means any match the watch writes ends up with `ownerId = null` in Firestore, which breaks owner-only write rules. The fix is to pass the authenticated user's UID in the watch's Firestore write.
 
 ### Missing composite index (TD-7)
 The archive query (`completed_matches` ordered by `ownerId + savedAt`) requires a composite Firestore index. Without it, the query fails on first use. Create it in Firebase Console → Firestore → Indexes, or follow the URL in the Firebase error log when the query runs.

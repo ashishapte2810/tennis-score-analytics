@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Active matches — owner can write; any authenticated user can read (spectator mode)
+    match /matches/{matchId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Completed archive — owner only
+    match /completed_matches/{matchId} {
+      allow read, write: if request.auth != null
+        && (resource == null || resource.data.ownerId == request.auth.uid);
+    }
+
+    // User state — own document only
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+  }
+}

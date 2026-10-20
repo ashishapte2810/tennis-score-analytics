@@ -12,6 +12,7 @@ data class MatchState(
     val totalSets: Int = 3,
     val setsNeeded: Int = 2,
     val dec: String = "stb",   // deciding set format: "stb" | "tb" | "adv"
+    val noAd: Boolean = false, // no-ad scoring: decisive point at deuce instead of advantage
     val done: Boolean = false,
     val lastServeType: String = "1st",
     val pointNum: Int = 0,

@@ -91,6 +91,7 @@ class FirestoreRepository {
             totalSets     = o.optInt("totalSets", 3),
             setsNeeded    = o.optInt("setsNeeded", 2),
             dec           = o.optString("dec", "stb"),
+            noAd          = o.optBoolean("noAd", false),
             done          = o.optBoolean("done", false),
             pointNum      = o.optInt("pointNum", 0),
             pointLog      = pointLog
@@ -108,6 +109,7 @@ class FirestoreRepository {
         o.put("totalSets",     s.totalSets)
         o.put("setsNeeded",    s.setsNeeded)
         o.put("dec",           s.dec)
+        o.put("noAd",          s.noAd)
         o.put("done",          s.done)
         o.put("pointNum",      s.pointNum)
 

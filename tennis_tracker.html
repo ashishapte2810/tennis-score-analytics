@@ -409,6 +409,13 @@ html, body {
     </select>
   </div>
   <div class="field-group">
+    <label class="field-label">No-ad scoring</label>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 0;">
+      <input type="checkbox" id="inp-noad" style="width:18px;height:18px;accent-color:var(--you);cursor:pointer;flex-shrink:0;">
+      <span style="font-size:13px;color:var(--sub);">Decisive point at deuce (no advantage)</span>
+    </label>
+  </div>
+  <div class="field-group">
     <label class="field-label">First serve</label>
     <div class="serve-pick">
       <button type="button" class="serve-opt active" id="srv-btn-0" onclick="pickServe(0)">Player 1</button>
@@ -793,7 +800,8 @@ function startMatch() {
   var p2 = document.getElementById('inp-p2').value.trim()||'Player 2';
   var fmt = parseInt(document.getElementById('inp-fmt').value);
   var dec = document.getElementById('inp-dec').value;
-  M = { names:[p1,p2], setsNeeded:fmt===5?3:2, totalSets:fmt, dec:dec,
+  var noAd = document.getElementById('inp-noad').checked;
+  M = { names:[p1,p2], setsNeeded:fmt===5?3:2, totalSets:fmt, dec:dec, noAd:noAd,
     completedSets:[], games:[0,0], pts:[0,0], serving:firstServer,
     mode:'normal', tbPts:[0,0], tbServeToggle:0, done:false, pointLog:[], pointNum:0 };
   HIST = []; clearSaved();
@@ -1082,6 +1090,8 @@ function awardPoint(w) {
   save(); flashSaved(); render(); renderLog(); renderStats();
 }
 function scoreNormal(w) {
+  // no-ad: decisive point at deuce — win the game immediately
+  if (M.noAd && M.pts[w]===3 && M.pts[1-w]===3) { winGame(w); return; }
   M.pts[w]++;
   if (M.pts[w]>=4 && M.pts[w]-M.pts[1-w]>=2) winGame(w);
 }
