@@ -1,0 +1,82 @@
+domain: "watch-sync"
+last_updated: "2026-10-20T00:00:00Z"
+last_updated_after_feature: "brownfield-import"
+
+narrative: |
+  The sync domain handles all Firestore I/O and state serialization for the watch app.
+  FirestoreRepository is the single point of contact with Firebase — it serializes MatchState
+  to/from JSON, writes match documents, listens for real-time updates, manages the active match
+  pointer in users/{uid}, and archives completed matches. WearDataListenerService is a separate
+  Android service that receives the match ID pushed from the phone via the Wearable Data Layer.
+
+source_files:
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/data/FirestoreRepository.kt"
+    line_range: "1-end"
+    role: "Firestore read/write, stateJson serialization/deserialization, active match listener"
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/data/WearDataListenerService.kt"
+    line_range: "1-end"
+    role: "Android WearableListenerService — receives match ID from phone via Wearable Data Layer"
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/complication/TennisComplicationService.kt"
+    line_range: "1-end"
+    role: "Wear OS complication — reads Firestore directly to render live score on watch face"
+
+flow_traces:
+  - name: "Save state to Firestore"
+    description: "After every point, watch writes the new MatchState to Firestore"
+    steps:
+      - "MatchViewModel.kt: calls FirestoreRepository.saveState(matchId, state, deviceId)"
+      - "FirestoreRepository.kt: serializeState(state) → builds Map with stateJson, updatedBy, updatedAt, ownerId (BUG: currently omitted)"
+      - "FirestoreRepository.kt: firestore.collection('matches').document(matchId).set(data)"
+  - name: "Listen for match updates"
+    description: "Watch receives real-time Firestore updates and skips its own writes"
+    steps:
+      - "FirestoreRepository.kt: watchMatch(matchId) → callbackFlow with addSnapshotListener"
+      - "FirestoreRepository.kt: on snapshot → check updatedBy == deviceId → skip if own write"
+      - "FirestoreRepository.kt: parseState(stateJson) → deserializes to MatchState"
+      - "FirestoreRepository.kt: emits MatchState to Flow"
+      - "MatchViewModel.kt: collects Flow → updates _matchState StateFlow"
+  - name: "Auto-connect to active match"
+    description: "Watch detects an active match started on the phone"
+    steps:
+      - "FirestoreRepository.kt: watchActiveMatch(uid) → listens to users/{uid}/activeMatchId"
+      - "FirestoreRepository.kt: emits matchId string via Flow"
+      - "MatchViewModel.kt: collects → navigates to ScoreScreen with matchId"
+  - name: "Receive match ID from phone (Wearable Data Layer)"
+    description: "Phone pushes match ID to watch at match start"
+    steps:
+      - "WearDataListenerService.kt: onDataChanged() → checks path /match"
+      - "WearDataListenerService.kt: reads key matchId from DataItem"
+      - "WearDataListenerService.kt: stores matchId → notifies MatchViewModel"
+
+integration_points:
+  - target: "Firebase Firestore"
+    mechanism: "Firestore KTX SDK — set(), addSnapshotListener as Flow, Kotlin coroutines .await()"
+    direction: "bidirectional"
+  - target: "watch-scoring (MatchState)"
+    mechanism: "FirestoreRepository.serializeState() / parseState() converts between MatchState and Firestore Map"
+    direction: "bidirectional"
+  - target: "watch-presentation (MatchViewModel)"
+    mechanism: "Exposes Flow<MatchState> and Flow<String> (activeMatchId) collected in ViewModel"
+    direction: "outbound"
+  - target: "Android Wearable Data Layer"
+    mechanism: "WearableListenerService receives DataItem from phone on path /match"
+    direction: "inbound"
+
+known_issues:
+  - description: "saveState() does not include ownerId in the Firestore write payload — document ownerId is set to null, blocking owner-only security rules and breaking cross-device archive"
+    severity: "high"
+    workaround: "Firestore security rules kept loose (allow write: if request.auth != null) until this is fixed. Fix: pass FirebaseAuth.getInstance().currentUser?.uid as ownerId in the write map."
+  - description: "No offline resilience — Firestore writes fail silently when the watch loses network connectivity; no queue or retry mechanism"
+    severity: "medium"
+    workaround: "User must stay connected. Backlog item S7-18 tracks Room DB queue implementation."
+  - description: "TennisComplicationService reads Firestore directly without going through MatchViewModel — if the stateJson schema changes, the complication parser must also be updated"
+    severity: "low"
+    workaround: "Update TennisComplicationService.parseComplicationState() in parallel with any stateJson schema change."
+
+patterns:
+  - name: "callbackFlow Firestore listener"
+    description: "addSnapshotListener is wrapped in callbackFlow so it can be collected as a Kotlin Flow in the ViewModel with lifecycle-aware collection."
+    example_file: "wear-os/app/src/main/java/com/tennis/tracker/wear/data/FirestoreRepository.kt:1"
+  - name: "Atomic JSON blob writes"
+    description: "The entire MatchState is serialized to a single stateJson string and written as a whole-document set() — never field-level updates — to prevent partial-write races."
+    example_file: "wear-os/app/src/main/java/com/tennis/tracker/wear/data/FirestoreRepository.kt:1"

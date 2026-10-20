@@ -1,0 +1,100 @@
+domain: "watch-presentation"
+last_updated: "2026-10-20T00:00:00Z"
+last_updated_after_feature: "brownfield-import"
+
+narrative: |
+  The presentation domain covers the full Wear OS UI: the MatchViewModel (state hub and business
+  logic coordinator), and three Compose screens (ScoreScreen, SignInScreen, MatchIdScreen).
+  MainActivity bootstraps navigation, ambient mode, and haptic feedback. All screens are stateless
+  Composables that receive state from MatchViewModel via collectAsStateWithLifecycle.
+  AuthRepository handles Google Sign-In and is consumed by MainActivity and SignInScreen.
+
+source_files:
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/MainActivity.kt"
+    line_range: "1-end"
+    role: "Entry point — NavHost setup, ambient mode (FLAG_KEEP_SCREEN_ON), haptic feedback dispatch"
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/presentation/MatchViewModel.kt"
+    line_range: "1-end"
+    role: "Core state hub — holds MatchState StateFlow, coordinates ScoringEngine and FirestoreRepository"
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/presentation/ScoreScreen.kt"
+    line_range: "1-end"
+    role: "Main scoring UI — split P1/P2 halves, UE amber window, between-game summary, match-over screen"
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/presentation/SignInScreen.kt"
+    line_range: "1-end"
+    role: "Google Sign-In screen — shown on cold start if no cached account"
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/presentation/MatchIdScreen.kt"
+    line_range: "1-end"
+    role: "Manual match ID entry — fallback when auto-connect via activeMatchId fails"
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/data/AuthRepository.kt"
+    line_range: "1-end"
+    role: "Google Sign-In — silentSignIn() attempt, full sign-in intent, Firebase credential exchange"
+
+flow_traces:
+  - name: "Cold start auth flow"
+    description: "Watch app starts; attempts silent sign-in before showing UI"
+    steps:
+      - "MainActivity.kt: onCreate() → AuthRepository.silentSignIn() attempted"
+      - "AuthRepository.kt: GoogleSignIn.getLastSignedInAccount() → if account exists, signInWithCredential()"
+      - "AuthRepository.kt: on failure → emit SignInRequired event"
+      - "MainActivity.kt: navigates to SignInScreen"
+      - "SignInScreen.kt: user taps Sign In → launches GoogleSignIn intent"
+      - "AuthRepository.kt: onActivityResult → signInWithCredential(GoogleAuthProvider.getCredential(idToken))"
+      - "MainActivity.kt: on auth success → navigates to ScoreScreen or MatchIdScreen"
+  - name: "Tap to score (with haptic)"
+    description: "Scorer taps; point is awarded and haptic pattern fires"
+    steps:
+      - "ScoreScreen.kt: tap left/right half detected → calls onPointAwarded(winnerIdx, ServeType.FIRST)"
+      - "MatchViewModel.kt: awardPoint(winnerIdx, serveType) → ScoringEngine.awardPoint()"
+      - "MatchViewModel.kt: emits HapticEvent (FIRST / SECOND / DOUBLE_FAULT)"
+      - "MainActivity.kt: collects HapticEvent → Vibrator pattern (40ms / 40+40ms / 80+80ms)"
+      - "MatchViewModel.kt: calls FirestoreRepository.saveState()"
+  - name: "Long press serve overlay"
+    description: "Long press reveals serve type overlay before awarding point"
+    steps:
+      - "ScoreScreen.kt: long press detected → showServeOverlay = true"
+      - "ScoreScreen.kt: overlay shows 2nd Serve / Double Fault options"
+      - "ScoreScreen.kt: tap option → onPointAwarded(winnerIdx, serveType) with selected type"
+      - "ScoreScreen.kt: Double Fault → winnerIdx set to opponent automatically"
+  - name: "Between-game summary"
+    description: "After a game ends, summary screen shows for 5s then auto-dismisses"
+    steps:
+      - "MatchViewModel.kt: detects game win in new MatchState"
+      - "MatchViewModel.kt: emits GameSummaryEvent"
+      - "ScoreScreen.kt: shows summary overlay with countdown ring"
+      - "ScoreScreen.kt: 5s timer → auto-dismiss or user taps to dismiss"
+
+integration_points:
+  - target: "watch-scoring (ScoringEngine)"
+    mechanism: "MatchViewModel calls ScoringEngine.awardPoint(); receives new MatchState"
+    direction: "outbound"
+  - target: "watch-sync (FirestoreRepository)"
+    mechanism: "MatchViewModel collects Flow<MatchState> from FirestoreRepository; calls saveState()"
+    direction: "bidirectional"
+  - target: "watch-sync (AuthRepository)"
+    mechanism: "MainActivity and SignInScreen use AuthRepository for sign-in flow"
+    direction: "outbound"
+  - target: "Vibrator API (Android)"
+    mechanism: "MainActivity dispatches haptic patterns via Vibrator.vibrate(VibrationEffect)"
+    direction: "outbound"
+
+known_issues:
+  - description: "AmbientModeSupport is deprecated (flagged with @Suppress DEPRECATION) — should migrate to AmbientLifecycleObserver"
+    severity: "low"
+    workaround: "Suppressed for now; ambient mode still works on current API. Migrate when targeting API 33+."
+  - description: "Vibrator (without VibratorManager) is deprecated on API 31+ — also suppressed"
+    severity: "low"
+    workaround: "Suppressed; haptic feedback still works. Migrate to VibratorManager when minSdk is raised."
+  - description: "Elongated haptic for match-winning point not implemented (S7-16 backlog)"
+    severity: "low"
+    workaround: "Match-winning point currently uses the same haptic as a regular point."
+
+patterns:
+  - name: "Stateless Compose screens"
+    description: "All Compose screens (ScoreScreen, SignInScreen, MatchIdScreen) are stateless — they receive state via parameters and emit events via callbacks. ViewModel holds all state."
+    example_file: "wear-os/app/src/main/java/com/tennis/tracker/wear/presentation/ScoreScreen.kt:1"
+  - name: "ViewModel as single state hub"
+    description: "MatchViewModel holds a single _matchState StateFlow; all UI subscribes to it. Scoring, Firestore writes, and navigation events all flow through the ViewModel."
+    example_file: "wear-os/app/src/main/java/com/tennis/tracker/wear/presentation/MatchViewModel.kt:1"
+  - name: "Haptic event channel"
+    description: "Haptic events are emitted as a Channel<HapticEvent> from MatchViewModel and collected in MainActivity, keeping haptic logic out of Composables."
+    example_file: "wear-os/app/src/main/java/com/tennis/tracker/wear/MainActivity.kt:1"

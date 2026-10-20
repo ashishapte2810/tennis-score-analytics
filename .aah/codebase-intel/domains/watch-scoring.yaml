@@ -1,0 +1,66 @@
+domain: "watch-scoring"
+last_updated: "2026-10-20T00:00:00Z"
+last_updated_after_feature: "brownfield-import"
+
+narrative: |
+  The scoring domain contains the pure business logic of the watch app: MatchState (the data model)
+  and ScoringEngine (stateless functions that compute transitions). ScoringEngine has no I/O —
+  it receives a MatchState and a winner index and returns a new MatchState. This makes it trivially
+  testable and completely independent of Firebase, Compose, or any Android API.
+  The same tennis rules are duplicated in tennis_tracker.html on the phone — both sides must stay in sync.
+
+source_files:
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/data/MatchState.kt"
+    line_range: "1-end"
+    role: "Kotlin data class representing the full match state — scores, sets, mode, point log"
+  - path: "wear-os/app/src/main/java/com/tennis/tracker/wear/data/ScoringEngine.kt"
+    line_range: "1-end"
+    role: "Pure scoring functions — awardPoint, scoreNormal, scoreTB, winGame, winSet"
+
+flow_traces:
+  - name: "Award point (watch)"
+    description: "Scorer taps a screen half; ScoringEngine computes new state"
+    steps:
+      - "ScoreScreen.kt: tap detected on left/right half → calls MatchViewModel.awardPoint(winnerIdx, serveType)"
+      - "MatchViewModel.kt: delegates to ScoringEngine.awardPoint(state, winnerIdx, serveType)"
+      - "ScoringEngine.kt: awardPoint() → appends point to pointLog, calls scoreNormal() or scoreTB()"
+      - "ScoringEngine.kt: scoreNormal() → updates pts[], checks for game win → winGame()"
+      - "ScoringEngine.kt: winGame() → updates games[], checks for set win → winSet()"
+      - "ScoringEngine.kt: winSet() → appends to completedSets, checks for match win → sets done=true"
+      - "ScoringEngine.kt: returns new MatchState (immutable)"
+      - "MatchViewModel.kt: updates _matchState StateFlow → triggers recomposition"
+      - "MatchViewModel.kt: calls FirestoreRepository.saveState(newState)"
+  - name: "Tiebreak transition"
+    description: "Set reaches 6-6 and mode switches to tiebreak"
+    steps:
+      - "ScoringEngine.kt: winGame() → games == [6,6] → mode = 'tiebreak'"
+      - "ScoringEngine.kt: subsequent awardPoint() → routes to scoreTB()"
+      - "ScoringEngine.kt: scoreTB() → increments tbPts, checks first to 7 win by 2"
+      - "ScoringEngine.kt: on tiebreak win → winSet() called → mode reset to 'normal'"
+
+integration_points:
+  - target: "watch-sync (FirestoreRepository)"
+    mechanism: "MatchViewModel passes new MatchState to FirestoreRepository.saveState() after every ScoringEngine call"
+    direction: "outbound"
+  - target: "watch-presentation (MatchViewModel)"
+    mechanism: "ScoringEngine is called by MatchViewModel; returns immutable MatchState"
+    direction: "inbound"
+
+known_issues:
+  - description: "No-ad scoring not implemented — scoreNormal() does not check a noAd flag at deuce; game always goes to Advantage/Deuce rather than sudden-death"
+    severity: "high"
+    workaround: "Do not use no-ad match format. Fix: add noAd field to MatchState and check it in scoreNormal() at the deuce branch."
+  - description: "Scoring logic is duplicated between ScoringEngine.kt and tennis_tracker.html — any rule fix must be applied in both places"
+    severity: "medium"
+    workaround: "Treat ScoringEngine.kt as the canonical implementation; mirror changes to JS manually."
+  - description: "No unit tests exist for ScoringEngine — edge cases (tiebreak win-by-2, super tiebreak, advantage set) are only tested manually"
+    severity: "medium"
+    workaround: "Manual end-to-end testing before sideloading new APK."
+
+patterns:
+  - name: "Pure function scoring"
+    description: "ScoringEngine functions are pure — they take MatchState and return a new MatchState with no side effects. This enables easy testing and reliable undo (just keep a history stack of prior states)."
+    example_file: "wear-os/app/src/main/java/com/tennis/tracker/wear/data/ScoringEngine.kt:1"
+  - name: "Immutable state transitions"
+    description: "MatchState is a Kotlin data class; ScoringEngine returns a copy() with updated fields rather than mutating in place."
+    example_file: "wear-os/app/src/main/java/com/tennis/tracker/wear/data/MatchState.kt:1"

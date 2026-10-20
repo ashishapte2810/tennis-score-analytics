@@ -1,0 +1,91 @@
+domain: "pwa"
+last_updated: "2026-10-20T00:00:00Z"
+last_updated_after_feature: "brownfield-import"
+
+narrative: |
+  The phone PWA is a single HTML file (tennis_tracker.html) containing the complete scoring app —
+  auth, scoring engine, stats, archive, offline queue, spectator mode, and service worker registration.
+  It connects directly to Firebase Firestore with no backend server. The app is installable as a PWA
+  via manifest.json and a cache-first service worker (sw.js, cache name court-tracker-v11).
+  Firebase Hosting serves it at tennis-score-analytics.web.app with a rewrite rule routing all paths
+  to tennis_tracker.html.
+
+source_files:
+  - path: "tennis_tracker.html"
+    line_range: "1-end"
+    role: "Complete phone PWA — auth, scoring, UI, stats, archive, offline queue, all in one file"
+  - path: "sw.js"
+    line_range: "1-end"
+    role: "Service worker — cache-first strategy, cache name court-tracker-v11, excludes HTML from cache"
+  - path: "manifest.json"
+    line_range: "1-end"
+    role: "PWA manifest — name, icons, display mode standalone, start URL"
+  - path: "index.html"
+    line_range: "1-end"
+    role: "Landing page served at root URL"
+  - path: "firebase.json"
+    line_range: "1-end"
+    role: "Firebase Hosting config — rewrite all paths to tennis_tracker.html, ignore wear-os/"
+
+flow_traces:
+  - name: "Match start to first sync"
+    description: "User starts a new match on the phone; state is written to Firestore"
+    steps:
+      - "tennis_tracker.html: user taps New Match → startMatch() called"
+      - "tennis_tracker.html: 6-char match ID generated → stateJson initialized"
+      - "tennis_tracker.html: setActiveMatch() → writes users/{uid}/activeMatchId to Firestore"
+      - "tennis_tracker.html: saveToFirestore() → writes matches/{id} with stateJson"
+      - "tennis_tracker.html: listenToMatch() → attaches onSnapshot listener"
+  - name: "Offline scoring"
+    description: "Phone scores a point while offline; queued and flushed on reconnect"
+    steps:
+      - "tennis_tracker.html: navigator.onLine check → false"
+      - "tennis_tracker.html: enqueueWrite() → writes to IndexedDB tsa_offline.queue"
+      - "tennis_tracker.html: window online event fires → flushQueue()"
+      - "tennis_tracker.html: dequeue writes → saveToFirestore() for each"
+  - name: "Google Sign-In (PWA)"
+    description: "User signs in; popup with redirect fallback for standalone PWA"
+    steps:
+      - "tennis_tracker.html: DOMContentLoaded → getRedirectResult() called first"
+      - "tennis_tracker.html: signInWithPopup(GoogleAuthProvider) attempted"
+      - "tennis_tracker.html: on auth/popup-blocked → signInWithRedirect() fallback"
+      - "tennis_tracker.html: auth.onAuthStateChanged → drives UI transitions"
+
+integration_points:
+  - target: "Firebase Firestore"
+    mechanism: "Firebase JS SDK compat v10.12.0 loaded from CDN; onSnapshot for reads, set() for writes"
+    direction: "bidirectional"
+  - target: "Firebase Auth"
+    mechanism: "GoogleAuthProvider signInWithPopup/Redirect; onAuthStateChanged for state"
+    direction: "inbound"
+  - target: "Firebase Hosting"
+    mechanism: "firebase deploy --only hosting; all paths rewrite to tennis_tracker.html"
+    direction: "outbound"
+  - target: "Service Worker (sw.js)"
+    mechanism: "navigator.serviceWorker.register(); cache-first fetch interception"
+    direction: "bidirectional"
+  - target: "IndexedDB"
+    mechanism: "tsa_offline DB, queue store; enqueue on offline, flush on online event"
+    direction: "bidirectional"
+
+known_issues:
+  - description: "DEVICE_ID is re-randomized on each page load — self-update guard (updatedBy check) breaks after page refresh, causing harmless redundant re-renders"
+    severity: "low"
+    workaround: "Cosmetic only — no scoring data lost. Fix: persist DEVICE_ID to localStorage."
+  - description: "signInWithRedirect race condition — auth.setPersistence() was removed because calling it before getRedirectResult() caused auth failures on PWA reload"
+    severity: "medium"
+    workaround: "setPersistence() is not called; Firebase default (LOCAL) applies. Do not add it back without testing redirect flow end-to-end."
+  - description: "No-ad scoring bug (TD-8) — scoreNormal() does not check noAd flag at deuce; game incorrectly goes to Advantage in no-ad matches"
+    severity: "medium"
+    workaround: "Avoid no-ad match format until fixed."
+  - description: "Cross-device archive empty (TD-7) — ownerId may be null if auth not resolved before match creation; missing composite Firestore index on ownerId+savedAt"
+    severity: "high"
+    workaround: "Create composite index in Firebase Console. Gate match creation on auth.currentUser being non-null."
+
+patterns:
+  - name: "Single-file SPA"
+    description: "All routing, state, and UI are managed inline in one HTML file with no framework. Tab switching is done by toggling CSS display on div elements."
+    example_file: "tennis_tracker.html:1"
+  - name: "IndexedDB write queue"
+    description: "Offline writes are buffered in IndexedDB and flushed atomically on the browser online event — standard queue-and-flush offline-first pattern."
+    example_file: "tennis_tracker.html:1"

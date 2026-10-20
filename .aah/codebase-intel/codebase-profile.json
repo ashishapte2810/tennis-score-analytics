@@ -1,0 +1,82 @@
+{
+  "profile_version": "1.0",
+  "root": "/Users/asapte/Documents/Tennis App - Documentation/repo",
+  "summary": {
+    "total_files": 13,
+    "total_lines": 1927,
+    "total_bytes": 72625,
+    "primary_language": "kotlin",
+    "languages": {
+      "kotlin": 11,
+      "json": 1,
+      "javascript": 1
+    },
+    "frameworks": [],
+    "data_stores": []
+  },
+  "directory_structure": {
+    "wear-os": 11
+  },
+  "architecture": {
+    "layers": {
+      "application": 13
+    },
+    "layer_files": {
+      "application": [
+        "manifest.json",
+        "sw.js",
+        "wear-os/app/src/main/java/com/tennis/tracker/wear/MainActivity.kt",
+        "wear-os/app/src/main/java/com/tennis/tracker/wear/complication/TennisComplicationService.kt",
+        "wear-os/app/src/main/java/com/tennis/tracker/wear/data/AuthRepository.kt",
+        "wear-os/app/src/main/java/com/tennis/tracker/wear/data/FirestoreRepository.kt",
+        "wear-os/app/src/main/java/com/tennis/tracker/wear/data/MatchState.kt",
+        "wear-os/app/src/main/java/com/tennis/tracker/wear/data/ScoringEngine.kt",
+        "wear-os/app/src/main/java/com/tennis/tracker/wear/data/WearDataListenerService.kt",
+        "wear-os/app/src/main/java/com/tennis/tracker/wear/presentation/MatchIdScreen.kt"
+      ]
+    },
+    "coupling": {
+      "afferent": [],
+      "efferent": [],
+      "instability": []
+    },
+    "hotspots": [
+      {
+        "file": "sw.js",
+        "symbols": 2
+      }
+    ]
+  },
+  "symbols": {
+    "total": 2,
+    "files_parsed": 1,
+    "by_kind": {
+      "const": 2
+    },
+    "top_level": [
+      {
+        "name": "CACHE",
+        "kind": "const",
+        "file": "sw.js",
+        "line": 1,
+        "fqn": "sw.js:CACHE"
+      },
+      {
+        "name": "HTML",
+        "kind": "const",
+        "file": "sw.js",
+        "line": 2,
+        "fqn": "sw.js:HTML"
+      }
+    ]
+  },
+  "imports": {
+    "module_graph_size": 0,
+    "entries": []
+  },
+  "entry_points": [],
+  "config_files": [],
+  "data_model_files": [],
+  "api_layer_files": [],
+  "test_files_count": 0
+}

@@ -1,0 +1,90 @@
+version: 1
+project_id: "tennis-score-analytics"
+last_updated: "2026-10-20T00:00:00Z"
+last_updated_after_feature: "brownfield-import"
+
+tech_patterns:
+  firestore_realtime_sync:
+    tool: "Firebase Firestore"
+    pattern: "Whole-document replace via stateJson blob. Phone uses onSnapshot; watch uses addSnapshotListener as a Kotlin Flow. Each client skips updates it generated (updatedBy guard)."
+    injection: "FirestoreRepository.kt on watch; Firebase JS SDK compat v10.12.0 loaded from CDN on phone."
+  jetpack_compose_wear:
+    tool: "Wear Compose Material 1.3.0 + ViewModel"
+    pattern: "Stateless Compose screens receive state from MatchViewModel via collectAsStateWithLifecycle. Navigation is handled by Wear Compose Navigation."
+    injection: "MainActivity sets up NavHost; ViewModel is scoped to the NavBackStackEntry."
+  coroutine_flows:
+    tool: "Kotlinx Coroutines 1.7.3"
+    pattern: "Firestore listeners converted to Flow via callbackFlow; collected in ViewModel with viewModelScope. All async Firestore/Auth calls use .await() from kotlinx-coroutines-play-services."
+    injection: "viewModelScope.launch in MatchViewModel; lifecycleScope in MainActivity."
+  pwa_single_file:
+    tool: "Vanilla HTML/CSS/JS"
+    pattern: "Entire phone app in one file — no build step, no bundler, no imports. Firebase SDK loaded from CDN. Service worker (v11) provides cache-first installs."
+    injection: "Deployed raw to Firebase Hosting via firebase deploy."
+  google_signin:
+    tool: "Firebase Auth + Google Sign-In"
+    pattern: "Phone: signInWithPopup → redirect fallback. Watch: silent sign-in attempt → full GoogleSignIn intent. Both exchange Google ID token for Firebase credential."
+    injection: "AuthRepository.kt on watch; inline Firebase Auth JS on phone."
+
+integrations:
+  - "Firebase Firestore: real-time match sync via stateJson doc writes + onSnapshot/Flow listeners on both clients"
+  - "Firebase Auth (Google provider): shared uid links phone and watch to same Firestore data"
+  - "Firebase Hosting: CDN delivery of PWA at tennis-score-analytics.web.app"
+  - "Android Wearable Data Layer: one-way match ID push from phone to watch at match start (path /match, key matchId)"
+
+project_knowledge:
+  - id: "w0-t1"
+    topic: "statejson-atomicity"
+    insight: "All match state is a single JSON blob written as a whole-document replace — never field-level merges — to prevent partial-update races between concurrent phone and watch writes."
+    evidence: ["brownfield-import"]
+    wave_added: 0
+    revised_from: null
+  - id: "w0-t2"
+    topic: "scoring-duplication"
+    insight: "Tennis scoring logic is intentionally duplicated: ScoringEngine.kt on watch and JS functions in tennis_tracker.html on phone. Any scoring rule change requires two implementations."
+    evidence: ["brownfield-import"]
+    wave_added: 0
+    revised_from: null
+  - id: "w0-t3"
+    topic: "device-id-guard"
+    insight: "The updatedBy field prevents clients from re-processing their own Firestore writes, but the phone re-randomizes its DEVICE_ID on each page reload, breaking the guard after refresh."
+    evidence: ["brownfield-import"]
+    wave_added: 0
+    revised_from: null
+  - id: "w0-t4"
+    topic: "watch-ownerid-bug"
+    insight: "The watch's saveState() omits ownerId from Firestore writes, blocking owner-only security rules. Firestore rules are intentionally loose until this is fixed (S17-8)."
+    evidence: ["brownfield-import"]
+    wave_added: 0
+    revised_from: null
+  - id: "w0-t5"
+    topic: "sw-cache-version"
+    insight: "Service worker cache name (court-tracker-vN in sw.js) must be incremented on every PWA deploy or users will serve stale code from cache."
+    evidence: ["brownfield-import"]
+    wave_added: 0
+    revised_from: null
+
+consumption_views:
+  quick_context: |
+    Breakpoint is a two-client tennis scoring system: a phone PWA (single HTML file, no build step) and a Kotlin Wear OS watch app, both syncing bidirectionally via Firebase Firestore with no custom server. All business logic runs client-side — ScoringEngine.kt on the watch, inline JS on the phone. State is stored as a single atomic JSON blob (stateJson) in Firestore and re-rendered on each update. Auth uses Google Sign-In on both clients with a shared Firebase uid. The Wearable Data Layer is used only for the initial match ID handshake; all score sync goes through Firestore directly. The PWA is deployed to Firebase Hosting with a cache-first service worker; the watch app is sideloaded via ADB.
+
+  style_guide: |
+    FIRESTORE WRITES: Always write the full stateJson blob as a whole-document replace — never use field-level merges that could race with concurrent writes from the other client.
+    STATEJSON SCHEMA: New fields must be optional with a safe default when absent; never rename or remove existing fields — existing in-progress Firestore documents use the current format.
+    SCORING DUPLICATION: Any change to tennis scoring rules requires updating BOTH ScoringEngine.kt (watch) and the equivalent JS functions in tennis_tracker.html (phone) — they share no code.
+    SERVICE WORKER: Always increment CACHE_NAME in sw.js (e.g. court-tracker-v12) on every PWA deploy or clients will serve stale cached code.
+    OFFLINE QUEUE: Phone-side offline writes go through the IndexedDB queue (tsa_offline DB, queue store) — never write directly to Firestore on the phone without the online check and queue fallback.
+    OWNERID: Always include ownerId in every Firestore write payload; omitting it (as the current watch saveState() does) breaks archive queries and blocks security rule enforcement.
+    COROUTINES: Use viewModelScope.launch for ViewModel-scoped async work; use lifecycleScope in MainActivity. Never launch coroutines from Composables directly.
+    FLOWS: Expose Firestore listeners as callbackFlow in FirestoreRepository; collect in ViewModel with stateIn(SharingStarted.WhileSubscribed). Never expose raw Flows to Compose screens.
+    AUTH WATCH: Always attempt silentSignIn() first on cold start before launching full Google Sign-In intent — avoids unnecessary sign-in screens for returning users.
+    PWA AUTH: Call getRedirectResult() on page load before attaching onAuthStateChanged to handle redirect-based sign-in completions. Do not call setPersistence() — it races with getRedirectResult().
+
+  known_concerns: |
+    WHEN scoring a point at deuce with no-ad rules WHAT game incorrectly advances to Advantage instead of sudden-death HOW check the noAd flag in scoreNormal() before applying deuce/advantage logic (TD-8, not yet fixed).
+    WHEN the watch saveState() writes to Firestore WHAT ownerId is null in the document HOW pass the authenticated user's uid explicitly in every FirestoreRepository.saveState() call (S17-8, not yet fixed — Firestore rules kept loose because of this).
+    WHEN reading the match archive on a new device WHAT archive appears empty HOW ensure ownerId is set before match creation (not after), and ensure the composite Firestore index on ownerId+savedAt exists (TD-7).
+    WHEN deploying a PWA change without bumping CACHE_NAME WHAT users receive stale code from the service worker cache HOW always increment the version number in sw.js before firebase deploy.
+    WHEN the phone page is reloaded mid-match WHAT the DEVICE_ID changes, breaking the self-update guard WHAT the phone will re-render on its own Firestore writes causing a redundant but harmless re-render HOW persist DEVICE_ID to localStorage to survive page reloads.
+    WHEN two clients score simultaneously within ~100ms WHAT one write overwrites the other (last-write-wins) HOW educate users that only one device should score at a time; a conflict-resolution strategy is not yet implemented.
+    WHEN changing the stateJson schema WHAT old in-progress Firestore documents use the prior format and will fail to parse HOW always add fields as optional with defaults; never remove or rename fields.
+    WHEN the watch is offline WHAT Firestore writes fail silently — no queue, no retry HOW offline resilience for the watch is backlog (S7-18); inform users to stay connected during match.
