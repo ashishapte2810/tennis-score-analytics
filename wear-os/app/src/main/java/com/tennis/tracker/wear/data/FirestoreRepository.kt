@@ -1,5 +1,6 @@
 package com.tennis.tracker.wear.data
 
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.channels.awaitClose
@@ -36,11 +37,13 @@ class FirestoreRepository {
     }
 
     suspend fun saveState(matchId: String, state: MatchState, deviceId: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
         db.collection("matches").document(matchId).set(
             mapOf(
                 "stateJson" to serializeState(state),
                 "updatedBy" to deviceId,
-                "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
+                "ownerId"   to uid
             )
         ).await()
     }
