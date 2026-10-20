@@ -1,0 +1,19 @@
+# Android build outputs
+.gradle/
+build/
+app/build/
+*.apk
+*.aab
+*.aar
+
+# Android Studio project files (machine-specific)
+.idea/
+*.iml
+local.properties
+
+# Firebase config — contains API keys, must NOT be committed
+# Each developer downloads their own from Firebase console
+app/google-services.json
+
+# OS
+.DS_Store

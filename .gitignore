@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# Firebase
+.firebase/
+.firebaserc.local
+
+# Wear OS / Android build artifacts
+wear-os/.gradle/
+wear-os/build/
+wear-os/app/build/
+wear-os/*.apk
+wear-os/*.aab
+wear-os/*.aar
+wear-os/.idea/
+wear-os/**/*.iml
+wear-os/local.properties
+wear-os/app/google-services.json
+
+# Node (if firebase-tools installed locally)
+node_modules/

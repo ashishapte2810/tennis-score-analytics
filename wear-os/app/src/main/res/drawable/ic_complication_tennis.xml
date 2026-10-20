@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Breakpoint complication picker icon: simplified T + ball, reads at 24dp -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="140"
+    android:viewportHeight="140">
+
+    <!-- Dark background circle -->
+    <path android:fillColor="#080A0D"
+          android:pathData="M70,2 A68,68 0 1 1 69.99,2 Z"/>
+
+    <!-- T-bar (3 brightest cells of horizontal bar, simplified for small size) -->
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.30" android:pathData="M18,37 h12 v12 h-12 z"/>
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.50" android:pathData="M31,37 h12 v12 h-12 z"/>
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.70" android:pathData="M44,37 h12 v12 h-12 z"/>
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.85" android:pathData="M57,37 h12 v12 h-12 z"/>
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.85" android:pathData="M71,37 h12 v12 h-12 z"/>
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.70" android:pathData="M84,37 h12 v12 h-12 z"/>
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.50" android:pathData="M97,37 h12 v12 h-12 z"/>
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.30" android:pathData="M110,37 h12 v12 h-12 z"/>
+
+    <!-- T-stem (centre col only at small size) -->
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.70" android:pathData="M64,50 h12 v12 h-12 z"/>
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.45" android:pathData="M64,63 h12 v12 h-12 z"/>
+    <path android:fillColor="#AEEA00" android:fillAlpha="0.25" android:pathData="M64,76 h12 v12 h-12 z"/>
+
+    <!-- Ball at junction -->
+    <path android:fillColor="#AEEA00"
+          android:pathData="M70,38 A22,22 0 1 1 69.99,38 Z"/>
+    <path android:strokeColor="#00000033" android:strokeWidth="2.2" android:strokeLineCap="round"
+          android:fillColor="@android:color/transparent"
+          android:pathData="M62,40 Q52,60 62,80"/>
+    <path android:strokeColor="#00000033" android:strokeWidth="2.2" android:strokeLineCap="round"
+          android:fillColor="@android:color/transparent"
+          android:pathData="M78,40 Q88,60 78,80"/>
+
+</vector>
