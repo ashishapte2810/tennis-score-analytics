@@ -694,7 +694,7 @@ function setMatchInUrl(id) {
   history.replaceState(null, '', url.toString());
 }
 function syncToCloud() {
-  if (!MATCH_ID || !M) return;
+  if (!MATCH_ID || !M || !OWNER_ID) return;
   try {
     db.collection('matches').doc(MATCH_ID).set({
       stateJson: JSON.stringify(M),
@@ -871,7 +871,7 @@ function saveToArchive() {
   localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive.slice(0,100)));
 }
 function saveToFirestore() {
-  if (!MATCH_ID || !M) return;
+  if (!MATCH_ID || !M || !OWNER_ID) return;
   var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
   var winner = sw[0]>sw[1]?0:1;
   db.collection('completed_matches').doc(MATCH_ID).set({
@@ -887,6 +887,8 @@ function saveToFirestore() {
   }).catch(function(e){ console.warn('Firestore archive failed:', e); });
 }
 function syncArchiveFromFirestore(callback) {
+  // Guard: OWNER_ID must be set before querying — null would match corrupt old docs
+  if (!OWNER_ID) { if (callback) callback(); return; }
   db.collection('completed_matches')
     .where('ownerId', '==', OWNER_ID)
     .orderBy('savedAt', 'desc')
@@ -897,9 +899,9 @@ function syncArchiveFromFirestore(callback) {
       var archive = loadArchive();
       snap.forEach(function(doc) {
         var d = doc.data();
-        if (!archive.find(function(e){ return e.id === d.id; })) {
-          archive.push({ id:d.id, names:d.names, date:d.date, completedSets:d.completedSets, winner:d.winner, totalSets:d.totalSets });
-        }
+        // Upsert: Firestore is source of truth — always replace the local entry
+        archive = archive.filter(function(e){ return e.id !== d.id; });
+        archive.push({ id:d.id, names:d.names, date:d.date, completedSets:d.completedSets, winner:d.winner, totalSets:d.totalSets });
       });
       archive.sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
       localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive.slice(0,100)));
