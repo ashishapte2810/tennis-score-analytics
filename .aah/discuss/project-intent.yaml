@@ -1,0 +1,30 @@
+raw_statement: >
+  Record match video on the same Android phone that runs the Breakpoint scorer.
+  Use pointLog timestamps to auto-trim the video into per-point highlight clips,
+  overlay scores on each clip (current score, server, set scores), let the user
+  select and export highlights to the gallery or share them. Provide match analytics
+  (rally length, point duration, serve win %, deuce conversion) from the existing
+  pointLog. On-device processing via ffmpeg-kit-android. No ball tracking or court
+  detection (Tier 3 deferred). Reference: SwingVision (Apple) — equivalent for Android.
+
+improvement_type: enhancement
+
+target_areas:
+  - video_recording          # CameraX recording lifecycle tied to match start/end
+  - video_sync               # Wall-clock timestamp alignment between video and pointLog
+  - highlight_generation     # Per-point clip trimming via ffmpeg-kit-android
+  - score_overlay            # FFmpeg drawtext filter burning score into clips
+  - highlight_export         # MediaStore export + Android share sheet
+  - match_analytics          # Rally length, point duration, serve stats from pointLog
+  - android_phone_app        # New native Android module (Kotlin + Compose)
+  - firebase_integration     # Reuse existing auth + Firestore from same Firebase project
+  - on_device_processing     # ffmpeg-kit-android, no cloud video processing
+
+constraints:
+  - Same device as scorer (no external camera, no separate recording device)
+  - On-device processing only (no cloud video pipeline for now)
+  - No ball tracking / court detection (Tier 3 explicitly deferred)
+  - Same Firebase project as existing app (shared auth, shared Firestore)
+  - Android only (iOS / SwingVision parity is not a goal)
+  - Kotlin + Jetpack Compose (consistent with existing Wear OS module)
+  - New android-app/ module alongside wear-os/ — no restructuring of existing Wear OS project

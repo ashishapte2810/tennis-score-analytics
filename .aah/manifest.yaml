@@ -1,6 +1,6 @@
 project_name: tennis-score-analytics
 project_type: brownfield
-current_phase: init
+current_phase: architecture
 complexity_tier: null
 completed_artifacts: []
 stack_choices: {}
@@ -21,7 +21,7 @@ delegated_to: null
 delegation_timestamp: null
 synthesis_mode: null
 created_at: '2026-10-20T13:52:37.367100+00:00'
-updated_at: '2026-10-20T14:01:40.136971+00:00'
+updated_at: '2026-10-21T18:48:08.761821+00:00'
 version_control:
   enabled: true
   provider: github

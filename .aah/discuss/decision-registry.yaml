@@ -1,0 +1,376 @@
+schema_version: '1.0'
+project: tennis-score-analytics
+complexity: mvp
+archetype: ai-applications
+domain_ids: []
+archetypes: []
+started_at: '2026-10-21'
+pre_resolved:
+- slug_id: backend-language
+  value: Kotlin
+  source: codebase
+  locked: true
+  activates: []
+  notes: 'source-detail: .aah/codebase-intel/tech-stack.md · Wear OS module is fully
+    Kotlin; new phone module follows same language'
+- slug_id: ui-framework
+  value: Jetpack Compose
+  source: codebase
+  locked: true
+  activates: []
+  notes: 'source-detail: .aah/codebase-intel/tech-stack.md · Wear OS uses Jetpack
+    Compose for Wear; phone module uses standard Jetpack Compose'
+- slug_id: auth-provider
+  value: Firebase Auth (Google Sign-In)
+  source: codebase
+  locked: true
+  activates: []
+  notes: 'source-detail: .aah/codebase-intel/codebase-learning.md · Both phone PWA
+    and watch share same Firebase Auth; phone app reuses same google-services.json'
+- slug_id: database-sync
+  value: Firebase Firestore
+  source: codebase
+  locked: true
+  activates: []
+  notes: 'source-detail: .aah/codebase-intel/codebase-learning.md · Core sync via
+    matches/{id} Firestore document; phone app reads same stateJson and pointLog'
+- slug_id: state-schema
+  value: stateJson with embedded pointLog timestamps
+  source: codebase
+  locked: true
+  activates: []
+  notes: 'source-detail: .aah/codebase-intel/data-model-diagram.md · Immutable contract
+    — pointLog[n].timestamp drives video clip boundaries'
+- slug_id: firebase-project
+  value: tennis-score-analytics (shared)
+  source: codebase
+  locked: true
+  activates: []
+  notes: 'source-detail: .aah/codebase-intel/codebase-learning.md · Single Firebase
+    project; same google-services.json used by Wear OS module'
+- slug_id: video-processing
+  value: On-device via ffmpeg-kit-android
+  source: inferred
+  locked: true
+  activates: []
+  notes: 'source-detail: knowledge/project-brief.md · Explicitly decided: no cloud
+    pipeline; ffmpeg-kit-android handles trim + overlay'
+- slug_id: ball-tracking
+  value: Deferred (not in scope)
+  source: inferred
+  locked: true
+  activates: []
+  notes: 'source-detail: knowledge/project-brief.md · Tier 3 explicitly deferred by
+    user; no CV/ML in this phase'
+decisions:
+- slug_id: local-storage-strategy
+  area: Data & Storage
+  question: How should raw video and processed clips be stored on device?
+  options_presented:
+  - persistent-indefinite
+  - transient-delete-after-export
+  - hybrid-48h-ttl
+  options_eliminated: []
+  response: hybrid-48h-ttl
+  response_type: single-select
+  source: user
+  activates: []
+  notes: 'User chose hybrid: raw video kept 48h in app-private storage with auto-delete
+    via WorkManager TTL job; processed clips exported to MediaStore gallery permanently;
+    analytics computed on demand from pointLog (no caching needed given small size
+    ~167 entries)'
+- slug_id: cloud-vs-local
+  area: Deployment
+  question: Where will this system run?
+  options_presented:
+  - cloud
+  - local
+  options_eliminated: []
+  response: local
+  response_type: single-select
+  source: inferred
+  activates: []
+  notes: On-device Android app; Firebase backend already exists and is not new infrastructure.
+    No cloud video processing.
+- slug_id: data-storage-present
+  area: Data & Storage
+  question: Does this system persist data?
+  options_presented:
+  - 'yes'
+  - 'no'
+  options_eliminated: []
+  response: 'yes'
+  response_type: single-select
+  source: inferred
+  activates: []
+  notes: Raw video (48h TTL in app-private storage), processed clips (MediaStore gallery),
+    Firestore match state
+- slug_id: custom-ui-required
+  area: UI/UX
+  question: Does this system need a custom user interface?
+  options_presented:
+  - 'yes'
+  - 'no'
+  options_eliminated: []
+  response: 'yes'
+  response_type: single-select
+  source: inferred
+  activates:
+  - ACT-UX
+  notes: Highlight browser, score overlay preview, analytics dashboard, export controls
+    — all custom Compose screens
+- slug_id: android-module-structure
+  area: Architecture & Technical Foundation
+  question: How does the new Android phone app sit in the repo alongside wear-os/?
+  options_presented:
+  - separate-gradle-project
+  - multi-module-gradle
+  - separate-repo
+  options_eliminated: []
+  response: separate-gradle-project
+  response_type: single-select
+  source: user
+  activates: []
+  notes: New android-app/ directory at repo root, own settings.gradle + build.gradle.
+    Zero risk to existing wear-os/ build. Will migrate to multi-module in a future
+    iteration once shared code surface is clear.
+- slug_id: recording-lifecycle
+  area: Solution Flow & End-Users
+  question: When does video recording start and stop relative to the match?
+  options_presented:
+  - tied-to-match
+  - manual-start-stop
+  - hybrid-auto-start-manual-override
+  options_eliminated: []
+  response: watch-triggered-after-phone-setup
+  response_type: single-select
+  source: user
+  activates: []
+  notes: User wants explicit Record button in phone app, independent of match scorer.
+    Requires explicit sync anchor between video start time and pointLog timestamps
+    — addressed in recording-sync-strategy. Foreground service still needed to survive
+    app switching.
+  revised_from:
+  - response: manual-start-stop
+    revised_at: '2026-10-21'
+    reason: 'User clarified full workflow: phone handles setup (names, format) + camera
+      preview + mounting; watch handles live preview + serve confirmation + atomic
+      Start (match + recording)'
+- slug_id: recording-sync-strategy
+  area: Data & State Architecture
+  question: How does video timestamp anchor to pointLog for accurate clip trimming?
+  options_presented:
+  - shared-device-clock
+  - tap-to-sync
+  - audio-clap-sync
+  - manual-offset-slider
+  options_eliminated: []
+  response: shared-device-clock
+  response_type: single-select
+  source: user
+  activates: []
+  notes: Record recordingStartMillis at tap-Record moment using System.currentTimeMillis().
+    Switch PWA pointLog entries from Firestore serverTimestamp to Date.now() (client-side)
+    to eliminate network latency variable. Clip offset = recordingStartMillis + (pointTimestamp
+    - matchStartTimestamp). Add +/- N second manual offset slider in highlight browser
+    as escape hatch.
+- slug_id: permissions-model
+  area: Security, Privacy & Compliance
+  question: When and how are camera, mic, and storage permissions requested?
+  options_presented:
+  - all-upfront
+  - contextual-at-first-use
+  - onboarding-screen
+  options_eliminated: []
+  response: contextual-at-first-use
+  response_type: single-select
+  source: user
+  activates: []
+  notes: Camera + mic requested when user answers Yes to recording prompt. Storage
+    auto-granted Android 10+. Denial handled with inline banner + Settings deep-link.
+- slug_id: watch-camera-preview
+  area: Integration & External Interfaces
+  question: How does the watch show live camera preview for tripod alignment?
+  options_presented:
+  - mjpeg-over-wifi
+  - webrtc-p2p
+  - jpeg-frames-over-wdl
+  - no-preview
+  options_eliminated: []
+  response: mjpeg-over-wifi
+  response_type: single-select
+  source: user
+  activates: []
+  notes: Phone runs embedded Ktor HTTP server; watch fetches MJPEG stream over local
+    WiFi at ~15fps 320x240. Used for 3-5 min setup window only. Battery impact acceptable.
+- slug_id: match-start-workflow
+  area: Solution Flow & End-Users
+  question: What is the end-to-end match setup + start workflow for recorded matches?
+  options_presented:
+  - phone-only-setup
+  - watch-only-setup
+  - phone-setup-then-watch-start
+  options_eliminated: []
+  response: phone-setup-then-watch-start
+  response_type: single-select
+  source: user
+  activates: []
+  notes: 'Phase 1 on phone (before mounting): player names, sets, no-ad, camera preview
+    + framing. Phase 2 on watch (after toss, camera already mounted): live preview
+    confirm, who-serves toggle, START button triggers match + recording atomically.'
+- slug_id: background-processing
+  area: Architecture & Technical Foundation
+  question: How does FFmpeg clip generation run without blocking the UI?
+  options_presented:
+  - foreground-service-coroutines
+  - workmanager
+  - coroutines-io-only
+  - cloud-processing
+  options_eliminated: []
+  response: foreground-service-coroutines
+  response_type: single-select
+  source: user
+  activates: []
+  notes: Foreground service (already needed for recording) pivots to processing mode
+    post-match. Notification shows progress. StateFlow drives in-app progress UI.
+    Cloud processing deferred to Tier 3 when ML processing justifies upload cost/complexity.
+    User selects ~10-15 clips so on-device processing ~3-5 min on modern phone.
+- slug_id: score-overlay-design
+  area: UI/UX
+  question: What does the score overlay look like burned into each highlight clip?
+  options_presented:
+  - minimal-score-only
+  - standard-score-server-sets
+  - full-everything
+  - grand-slam-broadcast-style
+  options_eliminated: []
+  response: grand-slam-broadcast-style
+  response_type: single-select
+  source: user
+  activates: []
+  notes: 'ATP/WTA scorebug reference: abbreviated player names (e.g. DJOK/ALCA), set
+    scores as boxes, current game score, small ball or racket icon for server. Top
+    bar, semi-transparent dark background. Static throughout clip. Point number as
+    small subtitle. Rendered via FFmpeg drawtext + drawbox filters.'
+- slug_id: highlight-ux-flow
+  area: UI/UX
+  question: How does the user browse, select, and export highlight clips post-match?
+  options_presented:
+  - flat-list
+  - timeline-set-game-point
+  - swipe-gallery
+  options_eliminated: []
+  response: timeline-set-game-point
+  response_type: single-select
+  source: user
+  activates: []
+  notes: 'Chapter structure: Set > Game > Point expandable list. Tap to preview inline.
+    Tick to select. Filter chips: Aces, Double faults, Break points, Tiebreak points,
+    Set/game winners.'
+- slug_id: export-flow
+  area: UI/UX
+  question: What does export produce?
+  options_presented:
+  - gallery-only
+  - merged-reel-only
+  - both-individual-and-reel
+  options_eliminated: []
+  response: both-individual-and-reel
+  response_type: single-select
+  source: user
+  activates: []
+  notes: Individual clips saved to MediaStore gallery. Option to also merge selected
+    clips into a single highlight reel via FFmpeg concat. Android share sheet for
+    sharing to WhatsApp, Instagram, etc.
+- slug_id: analytics-scope
+  area: Solution Flow & End-Users
+  question: Which analytics stats are in scope for MVP and where do they surface?
+  options_presented:
+  - phone-app-only
+  - pwa-only
+  - both-phone-rich-pwa-summary
+  options_eliminated: []
+  response: both-phone-rich-pwa-summary
+  response_type: single-select
+  source: user
+  activates: []
+  notes: 'Full analytics in Android phone app (Analytics tab): rally length avg+distribution,
+    serve win % by player, break point conversion, momentum graph (rolling win %).
+    Lightweight summary (serve %, rally avg) added to PWA end screen. All computed
+    from existing pointLog — no video required.'
+- slug_id: watch-match-creation-role
+  area: Integration & External Interfaces
+  question: Does the watch create match documents or does the phone retain ownership?
+  options_presented:
+  - watch-creates-match
+  - phone-creates-watch-signals
+  - phone-only
+  options_eliminated: []
+  response: phone-creates-watch-signals
+  response_type: single-select
+  source: user
+  activates: []
+  notes: 'Phone creates and owns match document (status: pending). Watch shows serving
+    confirmation screen (who serves toggle). Watch sends WDL message {action:start_match,
+    serving:N} back to phone. Phone receives WDL, updates match to status:active,
+    starts recording. Watch sees active state via Firestore listener and switches
+    to scoring screen. Watch remains Firestore read-only — no new security rules needed.'
+  emergent: true
+- slug_id: compliance-regimes
+  area: Security, Privacy & Compliance
+  question: Is this app subject to any compliance or regulatory requirements?
+  options_presented:
+  - none
+  - gdpr
+  - hipaa
+  - soc2
+  - pci
+  options_eliminated: []
+  response: none
+  response_type: single-select
+  source: user
+  activates: []
+  notes: Personal use tennis scoring and video app. No regulatory frameworks apply.
+- slug_id: docker-installed
+  area: Architecture & Technical Foundation
+  question: Is Docker installed on the development machine?
+  options_presented:
+  - 'yes'
+  - 'no'
+  options_eliminated: []
+  response: 'yes'
+  response_type: single-select
+  source: user
+  activates: []
+  notes: Docker available on dev machine.
+deferred_ideas: []
+constraint_audit:
+  passed: true
+  ran_at: '2026-10-21'
+  checks:
+    A_mandatory_coverage:
+      result: pass
+      detail: clean
+    B_forbidden_options:
+      result: pass
+      detail: clean
+    C_whitelist:
+      result: pass
+      detail: clean
+    D_service_scope:
+      result: pass
+      detail: clean
+    E_mandated_options:
+      result: pass
+      detail: clean
+    F_provenance:
+      result: pass
+      detail: clean
+  violations: []
+  flags: []
+  warnings: []
+active_references:
+  computed_at: '2026-10-21'
+  guidance_references: []
+  domain_brief_paths: []
+  archetype_playbook_paths: []
