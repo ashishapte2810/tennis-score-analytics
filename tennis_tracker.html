@@ -410,10 +410,12 @@ html, body {
   </div>
   <div class="field-group">
     <label class="field-label">No-ad scoring</label>
-    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 0;">
-      <input type="checkbox" id="inp-noad" style="width:18px;height:18px;accent-color:var(--you);cursor:pointer;flex-shrink:0;">
-      <span style="font-size:13px;color:var(--sub);">Decisive point at deuce (no advantage)</span>
-    </label>
+    <button type="button" id="noad-btn" onclick="toggleNoAd()"
+      style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--s2);color:var(--sub);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:0.02em;">
+      <span>Decisive point at deuce</span>
+      <span id="noad-indicator" style="font-size:11px;font-weight:800;letter-spacing:0.08em;color:var(--muted);">OFF</span>
+    </button>
+    <input type="checkbox" id="inp-noad" hidden>
   </div>
   <div class="field-group">
     <label class="field-label">First serve</label>
@@ -778,6 +780,19 @@ function pickServe(idx) {
   document.getElementById('srv-btn-0').className = 'serve-opt' + (idx===0?' active':'');
   document.getElementById('srv-btn-1').className = 'serve-opt' + (idx===1?' active':'');
 }
+function toggleNoAd() {
+  var cb = document.getElementById('inp-noad');
+  cb.checked = !cb.checked;
+  var btn = document.getElementById('noad-btn');
+  var ind = document.getElementById('noad-indicator');
+  if (cb.checked) {
+    btn.style.background = 'var(--you)'; btn.style.borderColor = 'var(--you)'; btn.style.color = 'var(--bg)';
+    ind.textContent = 'ON'; ind.style.color = 'var(--bg)';
+  } else {
+    btn.style.background = 'var(--s2)'; btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--sub)';
+    ind.textContent = 'OFF'; ind.style.color = 'var(--muted)';
+  }
+}
 function updateServeLabels() {
   var p1 = document.getElementById('inp-p1').value.trim() || 'Player 1';
   var p2 = document.getElementById('inp-p2').value.trim() || 'Player 2';
@@ -1080,6 +1095,11 @@ function doubleFault() {
     ts:new Date().toISOString(), serve:'Double Fault' };
   M.pointLog.push(entry);
   setServeType('1st'); setUndoState(true);
+  if (M.done) {
+    var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+    finishMatch(sw[0]>=sw[1]?0:1);
+    return;
+  }
   save(); flashSaved(); render(); renderLog(); renderStats();
 }
 function awardPoint(w) {
@@ -1099,6 +1119,11 @@ function awardPoint(w) {
     ts:new Date().toISOString(), serve:serveType };
   M.pointLog.push(entry);
   setServeType('1st'); setUndoState(true);
+  if (M.done) {
+    var sw=[0,0]; M.completedSets.forEach(function(s){if(s[0]>s[1])sw[0]++;else sw[1]++;});
+    finishMatch(sw[0]>=sw[1]?0:1);
+    return;
+  }
   save(); flashSaved(); render(); renderLog(); renderStats();
 }
 function scoreNormal(w) {
@@ -1128,7 +1153,7 @@ function winSet(w) {
   M.completedSets.push([g0,g1]);
   M.games=[0,0]; M.pts=[0,0]; M.tbPts=[0,0]; M.tbServeToggle=0; M.mode='normal';
   var won=M.completedSets.filter(function(s){return s[w]>s[1-w];}).length;
-  if (won>=M.setsNeeded){M.done=true;finishMatch(w);return;}
+  if (won>=M.setsNeeded){M.done=true;return;}
   if (isDeciding()&&M.dec==='stb'){M.mode='supertb';M.tbPts=[0,0];M.tbServeToggle=0;}
 }
 function finishMatch(w) {
