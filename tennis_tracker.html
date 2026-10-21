@@ -619,7 +619,17 @@ var db = firebase.firestore();
 var auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-var DEVICE_ID = Math.random().toString(36).slice(2, 10);
+var DEVICE_ID = (function() {
+  try {
+    var stored = localStorage.getItem('tsa_device_id');
+    if (stored) return stored;
+    var id = Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('tsa_device_id', id);
+    return id;
+  } catch(e) {
+    return Math.random().toString(36).slice(2, 10); // fallback: private/blocked storage
+  }
+})();
 var OWNER_ID = null;  // set from user.uid on sign-in
 var MATCH_ID = null, _unsubscribe = null;
 
