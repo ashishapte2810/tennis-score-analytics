@@ -1,4 +1,4 @@
-const CACHE = 'court-tracker-v10';
+const CACHE = 'court-tracker-v11';
 const HTML = './tennis_tracker.html';
 
 self.addEventListener('install', function(e) {
@@ -33,7 +33,14 @@ self.addEventListener('fetch', function(e) {
   }
 
   // Network-first for the HTML — always get the latest, fall back to cache
-  if (url.indexOf('tennis_tracker.html') !== -1 || url === self.location.origin + '/tennis-score-analytics/') {
+  // Catches direct /tennis_tracker.html requests AND the root URL (Firebase rewrites / → tennis_tracker.html)
+  var origin = self.location.origin;
+  if (
+    url.indexOf('tennis_tracker.html') !== -1 ||
+    url === origin + '/' ||
+    url === origin ||
+    url === origin + '/tennis-score-analytics/'
+  ) {
     e.respondWith(
       fetch(e.request).then(function(res) {
         var clone = res.clone();
