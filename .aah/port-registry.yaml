@@ -1,6 +1,6 @@
 schema_version: '2.0'
 initialized_at: '2026-10-20T14:01:27Z'
-compiled_at: null
+compiled_at: '2026-10-21T18:48:43Z'
 source_catalog: _resources/_references/_ports/_registry.yaml
 spine_order:
 - init-project
@@ -21,4 +21,72 @@ node_anchors:
   build: []
   fix: []
   deploy: []
-activities: []
+activities:
+- id: ACT-BACKEND-PLATFORM-AGENTCORE
+  ref: aah-agentcore-conventions
+  type: skill
+  impl_status: available
+  target: architecture
+  position: within
+  anchor: post-module-map
+  order: 20
+  depends_on:
+  - ACT-UX
+  triggered_by:
+    type: discuss
+    slug_id: backend-compute-platform
+    option: agentcore-runtime
+  consumes:
+  - .aah/discuss/decision-registry.yaml
+  - .aah/architecture/module-map.yaml
+  produces:
+  - .aah/architecture/backend-platform-conventions.md
+  trigger_reason: neither activates[] nor a triggered_by answer match — did not fire
+  status: skipped
+  started_at: null
+  completed_at: null
+  artifacts_produced: []
+- id: ACT-ACCESS
+  ref: aah-access
+  type: skill
+  impl_status: available
+  target: architecture
+  position: before
+  anchor: null
+  order: 10
+  depends_on: []
+  triggered_by:
+    type: discuss
+    slug_id: cloud-vs-local
+    option: cloud
+  consumes: []
+  produces:
+  - .aah/architecture/cloud-readiness.yaml
+  trigger_reason: neither activates[] nor a triggered_by answer match — did not fire
+  status: skipped
+  started_at: null
+  completed_at: null
+  artifacts_produced: []
+- id: ACT-UX
+  ref: aah-ux
+  type: skill
+  impl_status: available
+  target: architecture
+  position: within
+  anchor: post-module-map
+  order: 10
+  depends_on: []
+  triggered_by:
+    type: discuss
+    slug_id: custom-ui-required
+    option: 'yes'
+  consumes:
+  - .aah/discuss/project-intent.yaml
+  - .aah/architecture/module-map.yaml
+  produces:
+  - .aah/architecture/applications_wireframes/README.md
+  trigger_reason: activated via activates[] (answer to 'custom-ui-required')
+  status: pending
+  started_at: null
+  completed_at: null
+  artifacts_produced: []
